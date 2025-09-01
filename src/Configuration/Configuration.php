@@ -51,6 +51,7 @@ final class Configuration
     /**
      * @param array<string>        $ignorePackages
      * @param array<string, float> $thresholds
+     * @param array<string>        $eventOperations
      */
     public function __construct(
         private readonly array $ignorePackages = self::DEFAULT_IGNORE_PACKAGES,
@@ -65,6 +66,9 @@ final class Configuration
         private readonly bool $securityChecks = false,
         private readonly bool $failOnCritical = false,
         private readonly ?string $whitelistFile = null,
+        private readonly bool $eventIntegration = true,
+        private readonly array $eventOperations = ['install', 'update'],
+        private readonly int $eventAnalysisLimit = 10,
     ) {}
 
     /**
@@ -95,6 +99,9 @@ final class Configuration
             securityChecks: $config['security_checks'] ?? false,
             failOnCritical: $config['fail_on_critical'] ?? false,
             whitelistFile: $config['whitelist_file'] ?? null,
+            eventIntegration: $config['event_integration'] ?? true,
+            eventOperations: $config['event_operations'] ?? ['install', 'update'],
+            eventAnalysisLimit: $config['event_analysis_limit'] ?? 10,
         );
     }
 
@@ -118,6 +125,9 @@ final class Configuration
             securityChecks: $overrides['security_checks'] ?? $this->securityChecks,
             failOnCritical: $overrides['fail_on_critical'] ?? $this->failOnCritical,
             whitelistFile: $overrides['whitelist_file'] ?? $this->whitelistFile,
+            eventIntegration: $overrides['event_integration'] ?? $this->eventIntegration,
+            eventOperations: $overrides['event_operations'] ?? $this->eventOperations,
+            eventAnalysisLimit: $overrides['event_analysis_limit'] ?? $this->eventAnalysisLimit,
         );
     }
 
@@ -185,6 +195,24 @@ final class Configuration
     public function getWhitelistFile(): ?string
     {
         return $this->whitelistFile;
+    }
+
+    public function isEventIntegrationEnabled(): bool
+    {
+        return $this->eventIntegration;
+    }
+
+    /**
+     * @return array<string>
+     */
+    public function getEventOperations(): array
+    {
+        return $this->eventOperations;
+    }
+
+    public function getEventAnalysisLimit(): int
+    {
+        return $this->eventAnalysisLimit;
     }
 
     public function isPackageIgnored(string $packageName): bool
@@ -269,6 +297,9 @@ final class Configuration
             'security_checks' => $this->securityChecks,
             'fail_on_critical' => $this->failOnCritical,
             'whitelist_file' => $this->whitelistFile,
+            'event_integration' => $this->eventIntegration,
+            'event_operations' => $this->eventOperations,
+            'event_analysis_limit' => $this->eventAnalysisLimit,
         ];
     }
 }

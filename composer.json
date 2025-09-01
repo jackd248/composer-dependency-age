@@ -53,7 +53,7 @@
 		"sort-packages": true
 	},
 	"extra": {
-		"class": "KonradMichalik\\ComposerDependencyAge\\Plugin",
+		"class": "KonradMichalik\\ComposerDependencyAge\\Plugin\\DependencyAgePlugin",
 		"plugin-optional": false
 	},
 	"scripts": {
