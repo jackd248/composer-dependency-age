@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace KonradMichalik\ComposerDependencyAge\Service;
 
+use Composer\Composer;
 use DateTimeImmutable;
 use KonradMichalik\ComposerDependencyAge\Api\PackagistClient;
 use KonradMichalik\ComposerDependencyAge\Exception\ApiException;
@@ -37,6 +38,27 @@ class PackageInfoService
     public function __construct(
         private readonly PackagistClient $client,
     ) {}
+
+    /**
+     * Get installed packages from composer instance.
+     *
+     * @return array<Package>
+     */
+    public function getInstalledPackages(Composer $composer): array
+    {
+        $packages = [];
+        $installedRepository = $composer->getRepositoryManager()->getLocalRepository();
+        
+        foreach ($installedRepository->getPackages() as $composerPackage) {
+            $packages[] = new Package(
+                $composerPackage->getName(),
+                $composerPackage->getPrettyVersion(),
+                $composerPackage->isDev()
+            );
+        }
+        
+        return $packages;
+    }
 
     /**
      * Enrich a package with release date information.
@@ -87,12 +109,11 @@ class PackageInfoService
 
     /**
      * Enrich multiple packages with release information.
+     * Skips packages that are not available on Packagist without throwing errors.
      *
      * @param array<Package> $packages
      *
      * @return array<Package>
-     *
-     * @throws PackageInfoException
      */
     public function enrichPackagesWithReleaseInfo(array $packages): array
     {
@@ -102,9 +123,9 @@ class PackageInfoService
             try {
                 $enrichedPackages[] = $this->enrichPackageWithReleaseInfo($package);
             } catch (PackageInfoException $e) {
-                // For batch processing, we might want to skip failed packages
-                // and log the error, but continue with others
-                throw new PackageInfoException("Batch processing failed at package '{$package->name}': {$e->getMessage()}", previous: $e);
+                // Skip packages that are not available on Packagist (e.g. local packages, VCS repos)
+                // but continue processing other packages
+                $enrichedPackages[] = $package; // Add original package without enrichment
             }
         }
 

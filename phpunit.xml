@@ -13,6 +13,7 @@
     <testsuites>
         <testsuite name="tests">
             <directory>tests</directory>
+            <exclude>tests/vendor</exclude>
         </testsuite>
     </testsuites>
     <coverage>

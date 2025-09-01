@@ -207,7 +207,7 @@ final class PackageInfoServiceTest extends TestCase
         $this->assertInstanceOf(DateTimeImmutable::class, $enrichedPackages[1]->releaseDate);
     }
 
-    public function testEnrichPackagesWithReleaseInfoFailure(): void
+    public function testEnrichPackagesWithReleaseInfoSkipsFailedPackages(): void
     {
         $packages = [
             new Package('package/one', '1.0.0'),
@@ -234,10 +234,19 @@ final class PackageInfoServiceTest extends TestCase
                 ];
             });
 
-        $this->expectException(PackageInfoException::class);
-        $this->expectExceptionMessage("Batch processing failed at package 'package/failing'");
+        // Should not throw exception, but skip failed packages
+        $enrichedPackages = $this->service->enrichPackagesWithReleaseInfo($packages);
 
-        $this->service->enrichPackagesWithReleaseInfo($packages);
+        // Should return 2 packages: one enriched, one original
+        $this->assertCount(2, $enrichedPackages);
+        
+        // First package should be enriched
+        $this->assertEquals('package/one', $enrichedPackages[0]->name);
+        $this->assertInstanceOf(DateTimeImmutable::class, $enrichedPackages[0]->releaseDate);
+        
+        // Second package should be original (not enriched due to API failure)
+        $this->assertEquals('package/failing', $enrichedPackages[1]->name);
+        $this->assertNull($enrichedPackages[1]->releaseDate);
     }
 
     public function testFindLatestStableVersionWithStableVersions(): void

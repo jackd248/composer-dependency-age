@@ -24,7 +24,13 @@ declare(strict_types=1);
 namespace KonradMichalik\ComposerDependencyAge\Command;
 
 use Composer\Command\BaseCommand;
+use KonradMichalik\ComposerDependencyAge\Api\PackagistClient;
+use KonradMichalik\ComposerDependencyAge\Output\TableRenderer;
+use KonradMichalik\ComposerDependencyAge\Service\AgeCalculationService;
+use KonradMichalik\ComposerDependencyAge\Service\PackageInfoService;
+use KonradMichalik\ComposerDependencyAge\Service\RatingService;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -40,6 +46,25 @@ final class DependencyAgeCommand extends BaseCommand
             ->setHelp(
                 'This command analyzes the age of all dependencies in your project and '.
                 'provides insights about outdated packages.',
+            )
+            ->addOption(
+                'format',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Output format: cli (default), json, github',
+                'cli'
+            )
+            ->addOption(
+                'no-colors',
+                null,
+                InputOption::VALUE_NONE,
+                'Disable color output'
+            )
+            ->addOption(
+                'no-dev',
+                null,
+                InputOption::VALUE_NONE,
+                'Exclude dev dependencies from analysis'
             );
     }
 
@@ -48,9 +73,71 @@ final class DependencyAgeCommand extends BaseCommand
         $output->writeln('<info>Composer Dependency Age Plugin v0.1.0</info>');
         $output->writeln('<comment>Analyzing dependency ages...</comment>');
 
-        // Placeholder implementation - will be expanded in Phase 2
-        $output->writeln('<success>Analysis complete! (placeholder implementation)</success>');
+        try {
+            $composer = $this->requireComposer();
+            
+            // Initialize services
+            $packagistClient = new PackagistClient();
+            $ageCalculationService = new AgeCalculationService();
+            $ratingService = new RatingService($ageCalculationService);
+            $packageInfoService = new PackageInfoService($packagistClient);
+            $tableRenderer = new TableRenderer($ageCalculationService, $ratingService);
 
-        return self::SUCCESS;
+            // Get packages from composer.lock
+            $packages = $packageInfoService->getInstalledPackages($composer);
+            
+            if (empty($packages)) {
+                $output->writeln('<comment>No packages found to analyze.</comment>');
+                return self::SUCCESS;
+            }
+
+            $output->writeln(sprintf('<info>Found %d packages to analyze.</info>', count($packages)));
+
+            // Fetch package information with progress
+            $enrichedPackages = $packageInfoService->enrichPackagesWithReleaseInfo($packages);
+            
+            // Rate packages
+            $ratings = $ratingService->ratePackages($enrichedPackages);
+            
+            // Get output format
+            $format = $input->getOption('format') ?? 'cli';
+            $showColors = !$input->getOption('no-colors');
+            
+            // Render output
+            if ($format === 'cli') {
+                $tableOutput = $tableRenderer->renderTable($enrichedPackages, [
+                    'show_colors' => $showColors,
+                ]);
+                $output->write($tableOutput);
+                
+                // Show summary
+                $summary = $ratingService->getRatingSummary($enrichedPackages);
+                $output->writeln('');
+                $output->writeln('<info>Summary:</info>');
+                $output->writeln(sprintf('  Total packages: %d', $summary['total_packages']));
+                $output->writeln(sprintf('  Health score: %.1f%%', $summary['health_score']));
+                if ($summary['has_critical']) {
+                    $output->writeln('<error>  ⚠️  Critical packages found!</error>');
+                }
+            } elseif ($format === 'json') {
+                $jsonData = [
+                    'summary' => $ratingService->getRatingSummary($enrichedPackages),
+                    'packages' => $ratings,
+                ];
+                $jsonOutput = json_encode($jsonData, JSON_PRETTY_PRINT);
+                if (false === $jsonOutput) {
+                    throw new \RuntimeException('Failed to encode JSON output');
+                }
+                $output->writeln($jsonOutput);
+            }
+
+            return self::SUCCESS;
+        } catch (\Throwable $e) {
+            $output->writeln('<error>Error: ' . $e->getMessage() . '</error>');
+            if ($output->isVerbose()) {
+                $output->writeln('<error>' . $e->getTraceAsString() . '</error>');
+            }
+            return self::FAILURE;
+        }
     }
 }
