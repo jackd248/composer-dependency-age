@@ -26,6 +26,8 @@ namespace KonradMichalik\ComposerDependencyAge\Plugin;
 use Composer\Composer;
 use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\IO\IOInterface;
+use Composer\Plugin\Capability\CommandProvider;
+use Composer\Plugin\Capable;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\ScriptEvents;
 use Throwable;
@@ -33,7 +35,7 @@ use Throwable;
 /**
  * Main Composer plugin class for dependency age analysis.
  */
-final class DependencyAgePlugin implements PluginInterface, EventSubscriberInterface
+final class DependencyAgePlugin implements PluginInterface, EventSubscriberInterface, Capable
 {
     private Composer $composer;
     private IOInterface $io;
@@ -105,5 +107,17 @@ final class DependencyAgePlugin implements PluginInterface, EventSubscriberInter
                 $this->io->writeError('<warning>'.$e->getTraceAsString().'</warning>');
             }
         }
+    }
+
+    /**
+     * Get plugin capabilities.
+     *
+     * @return array<string, class-string>
+     */
+    public function getCapabilities(): array
+    {
+        return [
+            CommandProvider::class => DependencyAgeCommandProvider::class,
+        ];
     }
 }

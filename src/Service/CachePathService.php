@@ -30,7 +30,7 @@ use Throwable;
  */
 class CachePathService
 {
-    private const DEFAULT_CACHE_FILENAME = '.dependency-age-cache';
+    private const DEFAULT_CACHE_FILENAME = '.dependency-age.cache';
 
     /**
      * Get the appropriate cache file path for the current platform.

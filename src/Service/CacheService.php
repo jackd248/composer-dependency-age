@@ -53,7 +53,7 @@ class CacheService
     private const MAX_CACHE_SIZE = 10 * 1024 * 1024; // 10MB
 
     public function __construct(
-        private readonly string $cacheFile = '.dependency-age-cache',
+        private readonly string $cacheFile = '.dependency-age.cache',
         private readonly int $ttl = self::DEFAULT_TTL,
     ) {}
 

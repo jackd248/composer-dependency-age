@@ -32,6 +32,7 @@ use KonradMichalik\ComposerDependencyAge\Service\AgeCalculationService;
 use KonradMichalik\ComposerDependencyAge\Service\CachePathService;
 use KonradMichalik\ComposerDependencyAge\Service\CacheService;
 use KonradMichalik\ComposerDependencyAge\Service\PackageInfoService;
+use KonradMichalik\ComposerDependencyAge\Service\PerformanceOptimizationService;
 use KonradMichalik\ComposerDependencyAge\Service\RatingService;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -78,6 +79,12 @@ final class DependencyAgeCommand extends BaseCommand
                 'Disable cache usage',
             )
             ->addOption(
+                'offline',
+                null,
+                InputOption::VALUE_NONE,
+                'Offline mode - use only cached data (no API calls)',
+            )
+            ->addOption(
                 'ignore',
                 null,
                 InputOption::VALUE_REQUIRED,
@@ -100,12 +107,6 @@ final class DependencyAgeCommand extends BaseCommand
                 null,
                 InputOption::VALUE_REQUIRED,
                 'API request timeout in seconds',
-            )
-            ->addOption(
-                'max-concurrent',
-                null,
-                InputOption::VALUE_REQUIRED,
-                'Maximum concurrent API requests',
             )
             ->addOption(
                 'cache-ttl',
@@ -134,14 +135,36 @@ final class DependencyAgeCommand extends BaseCommand
             $configurationLoader = new ConfigurationLoader($whitelistService);
             $config = $configurationLoader->load($composer, $input);
 
+            // Parse command options
+            $offlineMode = $input->getOption('offline');
+            $noCacheMode = $input->getOption('no-cache');
+            $maxConcurrent = $config->getMaxConcurrentRequests();
+
+            // Initialize performance service
+            $performanceService = new PerformanceOptimizationService();
+
+            // Check if system is offline and enable offline mode if needed
+            if (!$offlineMode && $performanceService->isSystemOffline()) {
+                $output->writeln('<comment>System appears to be offline, enabling offline mode...</comment>');
+                $offlineMode = true;
+            }
+
+            // Initialize API client with performance settings
+            $packagistClient = new PackagistClient(
+                timeout: $config->getApiTimeout(),
+                maxConcurrentRequests: $maxConcurrent,
+                retryAttempts: 3,
+                retryDelayMultiplier: 1.5,
+                respectRateLimit: true,
+            );
+
             // Initialize services
-            $packagistClient = new PackagistClient();
             $ageCalculationService = new AgeCalculationService();
             $ratingService = new RatingService($ageCalculationService);
 
             // Initialize cache service unless disabled
             $cacheService = null;
-            if (!$input->getOption('no-cache')) {
+            if (!$noCacheMode) {
                 $cacheFile = $config->getCacheFile();
                 // If cache file is absolute path, use as-is, otherwise resolve it
                 if (!str_starts_with($cacheFile, '/')) {
@@ -151,9 +174,18 @@ final class DependencyAgeCommand extends BaseCommand
                     $cacheFile = dirname($cacheFile).'/'.basename($config->getCacheFile());
                 }
                 $cacheService = new CacheService($cacheFile, $config->getCacheTtl());
+            } elseif ($offlineMode) {
+                $output->writeln('<error>Error: Cannot use offline mode without cache (--offline requires caching)</error>');
+
+                return self::FAILURE;
             }
 
-            $packageInfoService = new PackageInfoService($packagistClient, $cacheService);
+            $packageInfoService = new PackageInfoService(
+                $packagistClient,
+                $cacheService,
+                $performanceService,
+                $offlineMode,
+            );
             $outputManager = new OutputManager($ageCalculationService, $ratingService);
 
             // Get packages from composer.lock

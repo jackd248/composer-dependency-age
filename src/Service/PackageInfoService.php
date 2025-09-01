@@ -38,6 +38,8 @@ class PackageInfoService
     public function __construct(
         private readonly PackagistClient $client,
         private readonly ?CacheService $cacheService = null,
+        private readonly ?PerformanceOptimizationService $performanceService = null,
+        private readonly bool $offlineMode = false,
     ) {}
 
     /**
@@ -132,6 +134,132 @@ class PackageInfoService
      */
     public function enrichPackagesWithReleaseInfo(array $packages): array
     {
+        if ($this->offlineMode) {
+            return $this->enrichPackagesOfflineMode($packages);
+        }
+
+        // Use batch processing for better performance with large package sets
+        if (null !== $this->performanceService && count($packages) > 10) {
+            return $this->enrichPackagesInBatches($packages);
+        }
+
+        // Fallback to sequential processing
+        return $this->enrichPackagesSequentially($packages);
+    }
+
+    /**
+     * Enrich packages in offline mode (cache-only).
+     *
+     * @param array<Package> $packages
+     *
+     * @return array<Package>
+     */
+    private function enrichPackagesOfflineMode(array $packages): array
+    {
+        if (null === $this->cacheService) {
+            // No cache service available, return packages unchanged
+            return $packages;
+        }
+
+        $enrichedPackages = [];
+
+        foreach ($packages as $package) {
+            $cachedData = $this->cacheService->getPackageInfo($package->name, $package->version);
+
+            if (null !== $cachedData) {
+                $enrichedPackages[] = $this->createPackageFromCacheData($package, $cachedData);
+            } else {
+                // No cached data available, return original package
+                $enrichedPackages[] = $package;
+            }
+        }
+
+        return $enrichedPackages;
+    }
+
+    /**
+     * Enrich packages using batch processing for better performance.
+     *
+     * @param array<Package> $packages
+     *
+     * @return array<Package>
+     */
+    private function enrichPackagesInBatches(array $packages): array
+    {
+        if (null === $this->performanceService) {
+            // Fallback to sequential processing if performance service not available
+            return $this->enrichPackagesSequentially($packages);
+        }
+
+        return $this->performanceService->processInBatches(
+            $packages,
+            fn(array $batch) => $this->enrichPackagesBatch($batch),
+        );
+    }
+
+    /**
+     * Enrich a batch of packages using parallel API requests.
+     *
+     * @param array<Package> $packages
+     *
+     * @return array<Package>
+     */
+    private function enrichPackagesBatch(array $packages): array
+    {
+        // Check cache first
+        $cachedPackages = [];
+        $packagesToFetch = [];
+
+        foreach ($packages as $package) {
+            $cachedData = $this->cacheService?->getPackageInfo($package->name, $package->version);
+
+            if (null !== $cachedData) {
+                $cachedPackages[] = $this->createPackageFromCacheData($package, $cachedData);
+            } else {
+                $packagesToFetch[] = $package;
+            }
+        }
+
+        if (empty($packagesToFetch)) {
+            return $cachedPackages;
+        }
+
+        // Fetch missing packages using batch API
+        $packageNames = array_map(fn ($package) => $package->name, $packagesToFetch);
+        $batchResults = $this->client->getMultiplePackageInfo($packageNames);
+
+        $enrichedPackages = $cachedPackages;
+
+        foreach ($packagesToFetch as $package) {
+            try {
+                $packageData = $batchResults[$package->name] ?? null;
+
+                if (null === $packageData) {
+                    // API call failed, keep original package
+                    $enrichedPackages[] = $package;
+                    continue;
+                }
+
+                $enrichedPackage = $this->processPackageData($package, $packageData);
+                $enrichedPackages[] = $enrichedPackage;
+            } catch (PackageInfoException) {
+                // Skip packages that fail to process, keep original
+                $enrichedPackages[] = $package;
+            }
+        }
+
+        return $enrichedPackages;
+    }
+
+    /**
+     * Enrich packages sequentially (fallback method).
+     *
+     * @param array<Package> $packages
+     *
+     * @return array<Package>
+     */
+    private function enrichPackagesSequentially(array $packages): array
+    {
         $enrichedPackages = [];
 
         foreach ($packages as $package) {
@@ -145,6 +273,79 @@ class PackageInfoService
         }
 
         return $enrichedPackages;
+    }
+
+    /**
+     * Process package data from API response.
+     *
+     * @param array<string, mixed> $packageData
+     *
+     * @throws PackageInfoException
+     */
+    private function processPackageData(Package $package, array $packageData): Package
+    {
+        if (!isset($packageData['packages'][$package->name])) {
+            throw new PackageInfoException("Package data for '{$package->name}' not found in API response");
+        }
+
+        $versions = $packageData['packages'][$package->name];
+
+        $installedVersionInfo = $this->findVersionInfo($versions, $package->version);
+        $latestVersionInfo = $this->findLatestStableVersion($versions);
+
+        if (null === $installedVersionInfo) {
+            throw new PackageInfoException("Version '{$package->version}' not found for package '{$package->name}'");
+        }
+
+        $enrichedPackage = $package;
+
+        // Add release date for installed version
+        if (isset($installedVersionInfo['time'])) {
+            $releaseDate = new DateTimeImmutable($installedVersionInfo['time']);
+            $enrichedPackage = $enrichedPackage->withReleaseDate($releaseDate);
+        }
+
+        // Add latest version information
+        if (null !== $latestVersionInfo && isset($latestVersionInfo['version'], $latestVersionInfo['time'])) {
+            $latestReleaseDate = new DateTimeImmutable($latestVersionInfo['time']);
+            $enrichedPackage = $enrichedPackage->withLatestVersion(
+                $latestVersionInfo['version'],
+                $latestReleaseDate,
+            );
+        }
+
+        // Store in cache if cache service is available
+        if (null !== $this->cacheService) {
+            $cacheData = $this->createCacheDataFromPackage($enrichedPackage);
+            $this->cacheService->storePackageInfo($package->name, $package->version, $cacheData);
+        }
+
+        return $enrichedPackage;
+    }
+
+    /**
+     * Create a package from cached data.
+     *
+     * @param array<string, mixed> $cachedData
+     */
+    private function createPackageFromCacheData(Package $package, array $cachedData): Package
+    {
+        $enrichedPackage = $package;
+
+        if (isset($cachedData['release_date'])) {
+            $releaseDate = new DateTimeImmutable($cachedData['release_date']);
+            $enrichedPackage = $enrichedPackage->withReleaseDate($releaseDate);
+        }
+
+        if (isset($cachedData['latest_version'], $cachedData['latest_release_date'])) {
+            $latestReleaseDate = new DateTimeImmutable($cachedData['latest_release_date']);
+            $enrichedPackage = $enrichedPackage->withLatestVersion(
+                $cachedData['latest_version'],
+                $latestReleaseDate,
+            );
+        }
+
+        return $enrichedPackage;
     }
 
     /**

@@ -55,7 +55,7 @@ final class PackagistClientTest extends TestCase
     {
         // Test with a package name that would create an invalid URL
         $this->expectException(ApiException::class);
-        $this->expectExceptionMessage('Failed to fetch package info');
+        $this->expectExceptionMessage('HTTP 404: Package not found');
 
         $this->client->getPackageInfo('non-existent-package/that-does-not-exist-anywhere');
     }
@@ -119,7 +119,7 @@ final class PackagistClientTest extends TestCase
     {
         // This test demonstrates the error handling by trying to connect to an invalid URL
         $this->expectException(ApiException::class);
-        $this->expectExceptionMessage('Failed to fetch package info');
+        $this->expectExceptionMessage('HTTP 404: Package not found');
 
         // Use a package name that will definitely not exist
         $this->client->getPackageInfo('non-existent-vendor/non-existent-package-'.uniqid());
@@ -133,7 +133,7 @@ final class PackagistClientTest extends TestCase
         $shortTimeoutClient = new PackagistClient(timeout: 1);
 
         $this->expectException(ApiException::class);
-        $this->expectExceptionMessage('Failed to fetch package info');
+        $this->expectExceptionMessage('HTTP 404: Package not found');
 
         // This should timeout quickly
         $shortTimeoutClient->getPackageInfo('non-existent-vendor/timeout-test-package');
@@ -160,7 +160,7 @@ final class PackagistClientTest extends TestCase
                 // If no exception is thrown, the API call succeeded unexpectedly
                 $this->fail("Expected ApiException for invalid package name: $invalidName");
             } catch (ApiException $e) {
-                $this->assertStringContainsString('Failed to fetch package info', $e->getMessage());
+                $this->assertStringContainsString('HTTP 404: Package not found', $e->getMessage());
             }
         }
     }

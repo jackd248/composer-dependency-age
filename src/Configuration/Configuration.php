@@ -56,7 +56,7 @@ final class Configuration
     public function __construct(
         private readonly array $ignorePackages = self::DEFAULT_IGNORE_PACKAGES,
         private array $thresholds = self::DEFAULT_THRESHOLDS,
-        private readonly string $cacheFile = '.dependency-age-cache',
+        private readonly string $cacheFile = '.dependency-age.cache',
         private readonly bool $includeDev = false,
         private readonly string $outputFormat = 'cli',
         private readonly bool $showColors = true,
@@ -89,7 +89,7 @@ final class Configuration
                 self::DEFAULT_THRESHOLDS,
                 $config['thresholds'] ?? [],
             ),
-            cacheFile: $config['cache_file'] ?? '.dependency-age-cache',
+            cacheFile: $config['cache_file'] ?? '.dependency-age.cache',
             includeDev: $config['include_dev'] ?? false,
             outputFormat: $config['output_format'] ?? 'cli',
             showColors: $config['show_colors'] ?? true,
