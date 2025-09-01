@@ -37,6 +37,7 @@ class PackageInfoService
 {
     public function __construct(
         private readonly PackagistClient $client,
+        private readonly ?CacheService $cacheService = null,
     ) {}
 
     /**
@@ -48,15 +49,15 @@ class PackageInfoService
     {
         $packages = [];
         $installedRepository = $composer->getRepositoryManager()->getLocalRepository();
-        
+
         foreach ($installedRepository->getPackages() as $composerPackage) {
             $packages[] = new Package(
                 $composerPackage->getName(),
                 $composerPackage->getPrettyVersion(),
-                $composerPackage->isDev()
+                $composerPackage->isDev(),
             );
         }
-        
+
         return $packages;
     }
 
@@ -68,6 +69,14 @@ class PackageInfoService
     public function enrichPackageWithReleaseInfo(Package $package): Package
     {
         try {
+            // Check cache first
+            if (null !== $this->cacheService) {
+                $cachedData = $this->cacheService->getPackageInfo($package->name, $package->version);
+                if (null !== $cachedData) {
+                    return $this->createPackageFromCachedData($package, $cachedData);
+                }
+            }
+
             $apiResponse = $this->client->getPackageInfo($package->name);
 
             if (!isset($apiResponse['packages'][$package->name])) {
@@ -101,6 +110,12 @@ class PackageInfoService
                 );
             }
 
+            // Store in cache if cache service is available
+            if (null !== $this->cacheService) {
+                $cacheData = $this->createCacheDataFromPackage($enrichedPackage);
+                $this->cacheService->storePackageInfo($package->name, $package->version, $cacheData);
+            }
+
             return $enrichedPackage;
         } catch (ApiException $e) {
             throw new PackageInfoException("Failed to get package info for '{$package->name}': {$e->getMessage()}", previous: $e);
@@ -122,7 +137,7 @@ class PackageInfoService
         foreach ($packages as $package) {
             try {
                 $enrichedPackages[] = $this->enrichPackageWithReleaseInfo($package);
-            } catch (PackageInfoException $e) {
+            } catch (PackageInfoException) {
                 // Skip packages that are not available on Packagist (e.g. local packages, VCS repos)
                 // but continue processing other packages
                 $enrichedPackages[] = $package; // Add original package without enrichment
@@ -209,5 +224,56 @@ class PackageInfoService
         }
 
         return true;
+    }
+
+    /**
+     * Create package instance from cached data.
+     *
+     * @param array<string, mixed> $cachedData
+     */
+    private function createPackageFromCachedData(Package $package, array $cachedData): Package
+    {
+        $enrichedPackage = $package;
+
+        // Add cached release date
+        if (isset($cachedData['release_date'])) {
+            $releaseDate = new DateTimeImmutable($cachedData['release_date']);
+            $enrichedPackage = $enrichedPackage->withReleaseDate($releaseDate);
+        }
+
+        // Add cached latest version info
+        if (isset($cachedData['latest_version'], $cachedData['latest_release_date'])) {
+            $latestReleaseDate = new DateTimeImmutable($cachedData['latest_release_date']);
+            $enrichedPackage = $enrichedPackage->withLatestVersion(
+                $cachedData['latest_version'],
+                $latestReleaseDate,
+            );
+        }
+
+        return $enrichedPackage;
+    }
+
+    /**
+     * Create cache data from enriched package.
+     *
+     * @return array<string, mixed>
+     */
+    private function createCacheDataFromPackage(Package $package): array
+    {
+        $cacheData = [];
+
+        if (null !== $package->releaseDate) {
+            $cacheData['release_date'] = $package->releaseDate->format('c');
+        }
+
+        if (null !== $package->latestVersion) {
+            $cacheData['latest_version'] = $package->latestVersion;
+        }
+
+        if (null !== $package->latestReleaseDate) {
+            $cacheData['latest_release_date'] = $package->latestReleaseDate->format('c');
+        }
+
+        return $cacheData;
     }
 }

@@ -82,10 +82,10 @@ final class DependencyAgeCommandTest extends TestCase
     public function testExecuteReturnsSuccessCode(): void
     {
         $commandTester = $this->getCommandTester();
-        
+
         // This test might fail if API calls fail, so we just check it doesn't crash
         $result = $commandTester->execute([]);
-        
+
         // Either success (0) or failure (1) is acceptable, as long as it doesn't crash
         $this->assertContains($result, [Command::SUCCESS, Command::FAILURE]);
     }

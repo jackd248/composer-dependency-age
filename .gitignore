@@ -3,8 +3,10 @@
 /.php-cs-fixer.cache
 /.phpunit.result.cache
 /.build
+/.dependency-age-cache
 /php-cs-fixer.xml
 /phpstan.xml
 /REQUIREMENT.md
 /tests/composer.lock
 /tests/vendor
+/tests/.dependency-age-cache

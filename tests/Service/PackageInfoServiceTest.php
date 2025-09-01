@@ -239,14 +239,14 @@ final class PackageInfoServiceTest extends TestCase
 
         // Should return 2 packages: one enriched, one original
         $this->assertCount(2, $enrichedPackages);
-        
+
         // First package should be enriched
         $this->assertEquals('package/one', $enrichedPackages[0]->name);
         $this->assertInstanceOf(DateTimeImmutable::class, $enrichedPackages[0]->releaseDate);
-        
+
         // Second package should be original (not enriched due to API failure)
         $this->assertEquals('package/failing', $enrichedPackages[1]->name);
-        $this->assertNull($enrichedPackages[1]->releaseDate);
+        $this->assertNotInstanceOf(DateTimeImmutable::class, $enrichedPackages[1]->releaseDate);
     }
 
     public function testFindLatestStableVersionWithStableVersions(): void

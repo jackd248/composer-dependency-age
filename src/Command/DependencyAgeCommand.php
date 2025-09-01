@@ -27,11 +27,15 @@ use Composer\Command\BaseCommand;
 use KonradMichalik\ComposerDependencyAge\Api\PackagistClient;
 use KonradMichalik\ComposerDependencyAge\Output\TableRenderer;
 use KonradMichalik\ComposerDependencyAge\Service\AgeCalculationService;
+use KonradMichalik\ComposerDependencyAge\Service\CachePathService;
+use KonradMichalik\ComposerDependencyAge\Service\CacheService;
 use KonradMichalik\ComposerDependencyAge\Service\PackageInfoService;
 use KonradMichalik\ComposerDependencyAge\Service\RatingService;
+use RuntimeException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Throwable;
 
 /**
  * Main command for analyzing dependency ages.
@@ -52,19 +56,25 @@ final class DependencyAgeCommand extends BaseCommand
                 null,
                 InputOption::VALUE_REQUIRED,
                 'Output format: cli (default), json, github',
-                'cli'
+                'cli',
             )
             ->addOption(
                 'no-colors',
                 null,
                 InputOption::VALUE_NONE,
-                'Disable color output'
+                'Disable color output',
             )
             ->addOption(
                 'no-dev',
                 null,
                 InputOption::VALUE_NONE,
-                'Exclude dev dependencies from analysis'
+                'Exclude dev dependencies from analysis',
+            )
+            ->addOption(
+                'no-cache',
+                null,
+                InputOption::VALUE_NONE,
+                'Disable cache usage',
             );
     }
 
@@ -75,19 +85,29 @@ final class DependencyAgeCommand extends BaseCommand
 
         try {
             $composer = $this->requireComposer();
-            
+
             // Initialize services
             $packagistClient = new PackagistClient();
             $ageCalculationService = new AgeCalculationService();
             $ratingService = new RatingService($ageCalculationService);
-            $packageInfoService = new PackageInfoService($packagistClient);
+
+            // Initialize cache service unless disabled
+            $cacheService = null;
+            if (!$input->getOption('no-cache')) {
+                $cachePathService = new CachePathService();
+                $cachePath = $cachePathService->getCacheFilePath();
+                $cacheService = new CacheService($cachePath);
+            }
+
+            $packageInfoService = new PackageInfoService($packagistClient, $cacheService);
             $tableRenderer = new TableRenderer($ageCalculationService, $ratingService);
 
             // Get packages from composer.lock
             $packages = $packageInfoService->getInstalledPackages($composer);
-            
+
             if (empty($packages)) {
                 $output->writeln('<comment>No packages found to analyze.</comment>');
+
                 return self::SUCCESS;
             }
 
@@ -95,21 +115,21 @@ final class DependencyAgeCommand extends BaseCommand
 
             // Fetch package information with progress
             $enrichedPackages = $packageInfoService->enrichPackagesWithReleaseInfo($packages);
-            
+
             // Rate packages
             $ratings = $ratingService->ratePackages($enrichedPackages);
-            
+
             // Get output format
             $format = $input->getOption('format') ?? 'cli';
             $showColors = !$input->getOption('no-colors');
-            
+
             // Render output
-            if ($format === 'cli') {
+            if ('cli' === $format) {
                 $tableOutput = $tableRenderer->renderTable($enrichedPackages, [
                     'show_colors' => $showColors,
                 ]);
                 $output->write($tableOutput);
-                
+
                 // Show summary
                 $summary = $ratingService->getRatingSummary($enrichedPackages);
                 $output->writeln('');
@@ -119,24 +139,25 @@ final class DependencyAgeCommand extends BaseCommand
                 if ($summary['has_critical']) {
                     $output->writeln('<error>  ⚠️  Critical packages found!</error>');
                 }
-            } elseif ($format === 'json') {
+            } elseif ('json' === $format) {
                 $jsonData = [
                     'summary' => $ratingService->getRatingSummary($enrichedPackages),
                     'packages' => $ratings,
                 ];
                 $jsonOutput = json_encode($jsonData, JSON_PRETTY_PRINT);
                 if (false === $jsonOutput) {
-                    throw new \RuntimeException('Failed to encode JSON output');
+                    throw new RuntimeException('Failed to encode JSON output');
                 }
                 $output->writeln($jsonOutput);
             }
 
             return self::SUCCESS;
-        } catch (\Throwable $e) {
-            $output->writeln('<error>Error: ' . $e->getMessage() . '</error>');
+        } catch (Throwable $e) {
+            $output->writeln('<error>Error: '.$e->getMessage().'</error>');
             if ($output->isVerbose()) {
-                $output->writeln('<error>' . $e->getTraceAsString() . '</error>');
+                $output->writeln('<error>'.$e->getTraceAsString().'</error>');
             }
+
             return self::FAILURE;
         }
     }
