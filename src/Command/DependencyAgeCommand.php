@@ -27,13 +27,12 @@ use Composer\Command\BaseCommand;
 use KonradMichalik\ComposerDependencyAge\Api\PackagistClient;
 use KonradMichalik\ComposerDependencyAge\Configuration\ConfigurationLoader;
 use KonradMichalik\ComposerDependencyAge\Configuration\WhitelistService;
-use KonradMichalik\ComposerDependencyAge\Output\TableRenderer;
+use KonradMichalik\ComposerDependencyAge\Output\OutputManager;
 use KonradMichalik\ComposerDependencyAge\Service\AgeCalculationService;
 use KonradMichalik\ComposerDependencyAge\Service\CachePathService;
 use KonradMichalik\ComposerDependencyAge\Service\CacheService;
 use KonradMichalik\ComposerDependencyAge\Service\PackageInfoService;
 use KonradMichalik\ComposerDependencyAge\Service\RatingService;
-use RuntimeException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -155,7 +154,7 @@ final class DependencyAgeCommand extends BaseCommand
             }
 
             $packageInfoService = new PackageInfoService($packagistClient, $cacheService);
-            $tableRenderer = new TableRenderer($ageCalculationService, $ratingService);
+            $outputManager = new OutputManager($ageCalculationService, $ratingService);
 
             // Get packages from composer.lock
             $packages = $packageInfoService->getInstalledPackages($composer);
@@ -182,22 +181,20 @@ final class DependencyAgeCommand extends BaseCommand
             // Fetch package information with progress
             $enrichedPackages = $packageInfoService->enrichPackagesWithReleaseInfo($filteredPackages);
 
-            // Rate packages with custom thresholds
-            $ratings = $ratingService->ratePackages($enrichedPackages, $config->getThresholds());
-
-            // Get configuration values
+            // Format and output results
             $format = $config->getOutputFormat();
             $showColors = $config->shouldShowColors();
+            $thresholds = $config->getThresholds();
 
-            // Render output
+            $formattedOutput = $outputManager->format($format, $enrichedPackages, [
+                'show_colors' => $showColors,
+            ], $thresholds);
+
+            $output->write($formattedOutput);
+
+            // Show CLI summary for CLI format only
             if ('cli' === $format) {
-                $tableOutput = $tableRenderer->renderTable($enrichedPackages, [
-                    'show_colors' => $showColors,
-                ]);
-                $output->write($tableOutput);
-
-                // Show summary
-                $summary = $ratingService->getRatingSummary($enrichedPackages);
+                $summary = $ratingService->getRatingSummary($enrichedPackages, $thresholds);
                 $output->writeln('');
                 $output->writeln('<info>Summary:</info>');
                 $output->writeln(sprintf('  Total packages: %d', $summary['total_packages']));
@@ -205,21 +202,11 @@ final class DependencyAgeCommand extends BaseCommand
                 if ($summary['has_critical']) {
                     $output->writeln('<error>  ⚠️  Critical packages found!</error>');
                 }
-            } elseif ('json' === $format) {
-                $jsonData = [
-                    'summary' => $ratingService->getRatingSummary($enrichedPackages),
-                    'packages' => $ratings,
-                ];
-                $jsonOutput = json_encode($jsonData, JSON_PRETTY_PRINT);
-                if (false === $jsonOutput) {
-                    throw new RuntimeException('Failed to encode JSON output');
-                }
-                $output->writeln($jsonOutput);
             }
 
             // Check if we should fail on critical dependencies
             if ($config->shouldFailOnCritical()) {
-                $summary = $ratingService->getRatingSummary($enrichedPackages);
+                $summary = $ratingService->getRatingSummary($enrichedPackages, $thresholds);
                 if ($summary['has_critical']) {
                     return 2; // Exit code 2 for critical dependencies
                 }

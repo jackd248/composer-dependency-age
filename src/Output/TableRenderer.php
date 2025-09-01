@@ -54,9 +54,14 @@ class TableRenderer
      *
      * @param array<Package>       $packages
      * @param array<string, mixed> $options
+     * @param array<string, float> $thresholds
      */
-    public function renderTable(array $packages, array $options = []): string
-    {
+    public function renderTable(
+        array $packages,
+        array $options = [],
+        array $thresholds = [],
+        ?DateTimeImmutable $referenceDate = null,
+    ): string {
         if (empty($packages)) {
             return "No packages found.\n";
         }
