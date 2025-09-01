@@ -1,0 +1,19 @@
+{
+	"require": {
+		"konradmichalik/composer-dependency-age": "@dev"
+	},
+	"require-dev": {
+		"composer/composer": "^2.0"
+	},
+	"repositories": [
+		{
+			"type": "path",
+			"url": "./../../*"
+		}
+	],
+	"config": {
+		"allow-plugins": {
+			"konradmichalik/composer-dependency-age": true
+		}
+	}
+}

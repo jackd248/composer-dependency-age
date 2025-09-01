@@ -1,0 +1,13 @@
+parameters:
+	level: 8
+	paths:
+		- src
+		- tests
+	treatPhpDocTypesAsCertain: false
+	ignoreErrors:
+		- '#Call to method PHPUnit\\Framework\\Assert::(assertInstanceOf|assertIsArray|assertNull)\(\) .* will always evaluate to (true|false)#'
+		- '#Parameter .* expects .*, .* given#'
+
+includes:
+	- vendor/phpstan/phpstan-symfony/extension.neon
+	- vendor/phpstan/phpstan-phpunit/extension.neon

@@ -1,0 +1,55 @@
+{
+  "packages": {
+	"doctrine/orm": [
+	  {
+		"name": "doctrine/orm",
+		"description": "Object-Relational-Mapping for PHP",
+		"keywords": ["orm", "database"],
+		"homepage": "https://www.doctrine-project.org",
+		"version": "2.14.0",
+		"version_normalized": "2.14.0.0",
+		"license": ["MIT"],
+		"authors": [
+		  {
+			"name": "Guilherme Blanco",
+			"email": "guilhermeblanco@gmail.com"
+		  }
+		],
+		"source": {
+		  "type": "git",
+		  "url": "https://github.com/doctrine/orm.git",
+		  "reference": "abc123def456"
+		},
+		"dist": {
+		  "type": "zip",
+		  "url": "https://api.github.com/repos/doctrine/orm/zipball/abc123def456",
+		  "reference": "abc123def456",
+		  "shasum": ""
+		},
+		"type": "library",
+		"time": "2023-04-15T09:20:00+00:00",
+		"require": {
+		  "php": "^8.0"
+		}
+	  },
+	  {
+		"name": "doctrine/orm",
+		"version": "2.15.0",
+		"version_normalized": "2.15.0.0",
+		"time": "2023-07-20T14:30:00+00:00",
+		"require": {
+		  "php": "^8.0"
+		}
+	  },
+	  {
+		"name": "doctrine/orm",
+		"version": "2.16.0",
+		"version_normalized": "2.16.0.0",
+		"time": "2023-11-10T10:15:00+00:00",
+		"require": {
+		  "php": "^8.1"
+		}
+	  }
+	]
+  }
+}
