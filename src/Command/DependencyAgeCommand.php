@@ -25,6 +25,8 @@ namespace KonradMichalik\ComposerDependencyAge\Command;
 
 use Composer\Command\BaseCommand;
 use KonradMichalik\ComposerDependencyAge\Api\PackagistClient;
+use KonradMichalik\ComposerDependencyAge\Configuration\ConfigurationLoader;
+use KonradMichalik\ComposerDependencyAge\Configuration\WhitelistService;
 use KonradMichalik\ComposerDependencyAge\Output\TableRenderer;
 use KonradMichalik\ComposerDependencyAge\Service\AgeCalculationService;
 use KonradMichalik\ComposerDependencyAge\Service\CachePathService;
@@ -75,6 +77,48 @@ final class DependencyAgeCommand extends BaseCommand
                 null,
                 InputOption::VALUE_NONE,
                 'Disable cache usage',
+            )
+            ->addOption(
+                'ignore',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Comma-separated list of packages to ignore (in addition to config)',
+            )
+            ->addOption(
+                'thresholds',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Age thresholds in format "green=0.5,yellow=1.0,red=2.0" (years)',
+            )
+            ->addOption(
+                'cache-file',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Custom cache file path',
+            )
+            ->addOption(
+                'api-timeout',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'API request timeout in seconds',
+            )
+            ->addOption(
+                'max-concurrent',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Maximum concurrent API requests',
+            )
+            ->addOption(
+                'cache-ttl',
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Cache TTL in seconds',
+            )
+            ->addOption(
+                'fail-on-critical',
+                null,
+                InputOption::VALUE_NONE,
+                'Exit with code 2 if critical dependencies found',
             );
     }
 
@@ -86,6 +130,11 @@ final class DependencyAgeCommand extends BaseCommand
         try {
             $composer = $this->requireComposer();
 
+            // Load configuration
+            $whitelistService = new WhitelistService();
+            $configurationLoader = new ConfigurationLoader($whitelistService);
+            $config = $configurationLoader->load($composer, $input);
+
             // Initialize services
             $packagistClient = new PackagistClient();
             $ageCalculationService = new AgeCalculationService();
@@ -94,9 +143,15 @@ final class DependencyAgeCommand extends BaseCommand
             // Initialize cache service unless disabled
             $cacheService = null;
             if (!$input->getOption('no-cache')) {
-                $cachePathService = new CachePathService();
-                $cachePath = $cachePathService->getCacheFilePath();
-                $cacheService = new CacheService($cachePath);
+                $cacheFile = $config->getCacheFile();
+                // If cache file is absolute path, use as-is, otherwise resolve it
+                if (!str_starts_with($cacheFile, '/')) {
+                    $cachePathService = new CachePathService();
+                    $cacheFile = $cachePathService->getCacheFilePath();
+                    // Replace default filename with configured filename
+                    $cacheFile = dirname($cacheFile).'/'.basename($config->getCacheFile());
+                }
+                $cacheService = new CacheService($cacheFile, $config->getCacheTtl());
             }
 
             $packageInfoService = new PackageInfoService($packagistClient, $cacheService);
@@ -105,23 +160,34 @@ final class DependencyAgeCommand extends BaseCommand
             // Get packages from composer.lock
             $packages = $packageInfoService->getInstalledPackages($composer);
 
-            if (empty($packages)) {
-                $output->writeln('<comment>No packages found to analyze.</comment>');
+            // Filter ignored packages and dev packages if needed
+            $filteredPackages = array_filter($packages, function ($package) use ($config) {
+                // Skip dev packages if not included
+                if (!$config->shouldIncludeDev() && $package->isDev) {
+                    return false;
+                }
+
+                // Skip ignored packages
+                return !$config->isPackageIgnored($package->name);
+            });
+
+            if (empty($filteredPackages)) {
+                $output->writeln('<comment>No packages found to analyze after filtering.</comment>');
 
                 return self::SUCCESS;
             }
 
-            $output->writeln(sprintf('<info>Found %d packages to analyze.</info>', count($packages)));
+            $output->writeln(sprintf('<info>Found %d packages to analyze.</info>', count($filteredPackages)));
 
             // Fetch package information with progress
-            $enrichedPackages = $packageInfoService->enrichPackagesWithReleaseInfo($packages);
+            $enrichedPackages = $packageInfoService->enrichPackagesWithReleaseInfo($filteredPackages);
 
-            // Rate packages
-            $ratings = $ratingService->ratePackages($enrichedPackages);
+            // Rate packages with custom thresholds
+            $ratings = $ratingService->ratePackages($enrichedPackages, $config->getThresholds());
 
-            // Get output format
-            $format = $input->getOption('format') ?? 'cli';
-            $showColors = !$input->getOption('no-colors');
+            // Get configuration values
+            $format = $config->getOutputFormat();
+            $showColors = $config->shouldShowColors();
 
             // Render output
             if ('cli' === $format) {
@@ -149,6 +215,14 @@ final class DependencyAgeCommand extends BaseCommand
                     throw new RuntimeException('Failed to encode JSON output');
                 }
                 $output->writeln($jsonOutput);
+            }
+
+            // Check if we should fail on critical dependencies
+            if ($config->shouldFailOnCritical()) {
+                $summary = $ratingService->getRatingSummary($enrichedPackages);
+                if ($summary['has_critical']) {
+                    return 2; // Exit code 2 for critical dependencies
+                }
             }
 
             return self::SUCCESS;
