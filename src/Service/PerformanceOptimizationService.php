@@ -125,7 +125,7 @@ final class PerformanceOptimizationService
     {
         // Use cURL for more reliable connectivity test
         $curlHandle = curl_init();
-        
+
         curl_setopt_array($curlHandle, [
             CURLOPT_URL => 'https://repo.packagist.org',
             CURLOPT_RETURNTRANSFER => true,
@@ -144,7 +144,7 @@ final class PerformanceOptimizationService
 
         // Consider offline only if there's a cURL error or clear network failure
         // Allow redirects (3xx) and success codes (2xx) as online
-        return false === $result || !empty($error) || ($httpCode !== 0 && $httpCode < 200) || $httpCode >= 500;
+        return false === $result || !empty($error) || (0 !== $httpCode && $httpCode < 200) || $httpCode >= 500;
     }
 
     /**

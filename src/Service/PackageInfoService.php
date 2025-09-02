@@ -193,7 +193,7 @@ class PackageInfoService
 
         return $this->performanceService->processInBatches(
             $packages,
-            fn(array $batch) => $this->enrichPackagesBatch($batch),
+            fn (array $batch) => $this->enrichPackagesBatch($batch),
         );
     }
 
