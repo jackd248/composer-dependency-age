@@ -142,17 +142,27 @@ class AgeCalculationService
     {
         // Default thresholds in days (6 months, 12 months)
         $defaultThresholds = [
-            'green' => 183,  // ~6 months
-            'yellow' => 365, // ~12 months
+            'green' => 182,  // 0.5 years = ~182 days
+            'yellow' => 365, // 1.0 year = 365 days
         ];
 
-        $thresholds = array_merge($defaultThresholds, $thresholds);
+        // Convert thresholds from years to days if they appear to be in years (< 10)
+        $convertedThresholds = [];
+        foreach ($thresholds as $key => $value) {
+            if ($value < 10) { // Assume values < 10 are in years
+                $convertedThresholds[$key] = (int) round($value * 365.25);
+            } else {
+                $convertedThresholds[$key] = $value;
+            }
+        }
 
-        if ($ageInDays < $thresholds['green']) {
+        $thresholds = array_merge($defaultThresholds, $convertedThresholds);
+
+        if ($ageInDays <= $thresholds['green']) {
             return 'green';
         }
 
-        if ($ageInDays < $thresholds['yellow']) {
+        if ($ageInDays <= $thresholds['yellow']) {
             return 'yellow';
         }
 

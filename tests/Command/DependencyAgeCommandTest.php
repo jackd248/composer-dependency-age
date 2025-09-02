@@ -97,7 +97,7 @@ final class DependencyAgeCommandTest extends TestCase
 
         $output = $commandTester->getDisplay();
 
-        $this->assertStringContainsString('Composer Dependency Age Plugin', $output);
+        $this->assertStringContainsString('Composer Dependency Age', $output);
         $this->assertStringContainsString('Analyzing dependency ages', $output);
         // Since we're doing real API calls, we can't guarantee success
         // but we can check that the command at least starts processing

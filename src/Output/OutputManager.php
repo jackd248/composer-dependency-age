@@ -28,6 +28,7 @@ use InvalidArgumentException;
 use KonradMichalik\ComposerDependencyAge\Model\Package;
 use KonradMichalik\ComposerDependencyAge\Service\AgeCalculationService;
 use KonradMichalik\ComposerDependencyAge\Service\RatingService;
+use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Manages different output formats for dependency age reports.
@@ -62,11 +63,27 @@ final class OutputManager
         ?DateTimeImmutable $referenceDate = null,
     ): string {
         return match ($format) {
-            'cli' => $this->formatCli($packages, $options, $thresholds, $referenceDate),
             'json' => $this->formatJson($packages, $thresholds, $referenceDate),
             'github' => $this->formatGitHub($packages, $thresholds, $referenceDate),
-            default => throw new InvalidArgumentException("Unsupported output format: {$format}"),
+            default => throw new InvalidArgumentException("Unsupported output format: {$format}. Use renderCliTable() for CLI output."),
         };
+    }
+
+    /**
+     * Render CLI table directly to output (uses Symfony Console Table).
+     *
+     * @param array<Package>       $packages
+     * @param array<string, mixed> $options
+     * @param array<string, float> $thresholds
+     */
+    public function renderCliTable(
+        array $packages,
+        OutputInterface $output,
+        array $options = [],
+        array $thresholds = [],
+        ?DateTimeImmutable $referenceDate = null,
+    ): void {
+        $this->tableRenderer->renderTable($packages, $output, $options, $thresholds, $referenceDate);
     }
 
     /**
@@ -98,18 +115,6 @@ final class OutputManager
     public static function isFormatSupported(string $format): bool
     {
         return in_array($format, self::getAvailableFormats(), true);
-    }
-
-    /**
-     * Format packages as CLI table.
-     *
-     * @param array<Package>       $packages
-     * @param array<string, mixed> $options
-     * @param array<string, float> $thresholds
-     */
-    private function formatCli(array $packages, array $options, array $thresholds, ?DateTimeImmutable $referenceDate): string
-    {
-        return $this->tableRenderer->renderTable($packages, $options, $thresholds, $referenceDate);
     }
 
     /**

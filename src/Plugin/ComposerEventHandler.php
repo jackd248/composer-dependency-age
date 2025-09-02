@@ -128,8 +128,14 @@ final class ComposerEventHandler
         // Only enrich packages that are not in cache to keep it fast
         $quickEnrichedPackages = $this->performQuickEnrichment($packageInfoService, $filteredPackages);
 
-        // Get summary
-        $summary = $ratingService->getRatingSummary($quickEnrichedPackages, $this->config->getThresholds());
+        // Get rating summary
+        $ratingSummary = $ratingService->getRatingSummary($quickEnrichedPackages, $this->config->getThresholds());
+        
+        // Get age statistics
+        $ageStats = $ageCalculationService->calculateStatistics($quickEnrichedPackages);
+        
+        // Merge summaries
+        $summary = array_merge($ratingSummary, $ageStats);
 
         return $summary;
     }
@@ -177,7 +183,6 @@ final class ComposerEventHandler
     private function displaySummary(array $summary, string $operation): void
     {
         $totalPackages = $summary['total_packages'];
-        $healthScore = $summary['health_score'] ?? 100.0;
         $hasCritical = $summary['has_critical'] ?? false;
         $criticalCount = $summary['critical_count'] ?? 0;
 
@@ -187,39 +192,18 @@ final class ComposerEventHandler
             return;
         }
 
-        // Main summary line
-        $healthEmoji = $this->getHealthEmoji($healthScore);
+        // Calculate total age from available data
+        $totalAgeInYears = $this->calculateTotalAgeInYears($summary);
+        $averageAgeFormatted = $summary['average_age_formatted'] ?? '0 days';
+
+        // Main summary line as specified in requirements
         $this->io->write(sprintf(
-            '%s Your dependencies health score: <info>%.1f%%</info> (%d packages analyzed)',
-            $healthEmoji,
-            $healthScore,
-            $totalPackages,
+            '✱ Your dependencies age is <info>%s</info> (average is %s per package)',
+            $this->formatTotalAge($totalAgeInYears),
+            $averageAgeFormatted,
         ));
 
-        // Show critical packages warning if any
-        if ($hasCritical && $criticalCount > 0) {
-            $this->io->write(sprintf(
-                '<error>⚠️  Found %d critical package%s that need attention!</error>',
-                $criticalCount,
-                $criticalCount > 1 ? 's' : '',
-            ));
-        }
-
-        // Show average age if available
-        if (isset($summary['average_age_formatted']) && '0 days' !== $summary['average_age_formatted']) {
-            $this->io->write(sprintf(
-                'Average dependency age: <comment>%s</comment>',
-                $summary['average_age_formatted'],
-            ));
-        }
-
-        // Suggestion for detailed analysis
-        if ($hasCritical || $healthScore < 80) {
-            $this->io->write('');
-            $this->io->write('💡 <comment>Run `composer dependency-age` for detailed analysis and recommendations.</comment>');
-        }
-
-        $this->io->write('');
+        $this->io->write('Run `composer dependency-age` for detailed analysis and recommendations.');
     }
 
     /**
@@ -258,16 +242,39 @@ final class ComposerEventHandler
     }
 
     /**
-     * Get emoji based on health score.
+     * Calculate total age in years from summary data.
+     *
+     * @param array<string, mixed> $summary
      */
-    private function getHealthEmoji(float $healthScore): string
+    private function calculateTotalAgeInYears(array $summary): float
     {
-        if ($healthScore >= 90) {
-            return '🟢';
-        } elseif ($healthScore >= 70) {
-            return '🟡';
+        $totalPackages = $summary['total_packages'] ?? 0;
+        $averageAgeDays = $summary['average_age_days'] ?? 0;
+
+        if (0 === $totalPackages || 0 === $averageAgeDays) {
+            return 0.0;
         }
 
-        return '🔴';
+        // Total age = average age * package count, converted to years
+        $totalAgeDays = $averageAgeDays * $totalPackages;
+
+        return $totalAgeDays / 365.25; // Account for leap years
+    }
+
+    /**
+     * Format total age for display.
+     */
+    private function formatTotalAge(float $totalAgeInYears): string
+    {
+        if ($totalAgeInYears < 1) {
+            $months = $totalAgeInYears * 12;
+            if ($months < 1) {
+                return sprintf('%.1f months', $months);
+            }
+
+            return sprintf('%.1f months', $months);
+        }
+
+        return sprintf('**%.1f years**', $totalAgeInYears);
     }
 }

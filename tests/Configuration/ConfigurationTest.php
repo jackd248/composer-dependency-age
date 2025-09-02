@@ -39,7 +39,7 @@ final class ConfigurationTest extends TestCase
         $this->assertEqualsWithDelta(0.5, $config->getThresholds()['green'], PHP_FLOAT_EPSILON);
         $this->assertEqualsWithDelta(1.0, $config->getThresholds()['yellow'], PHP_FLOAT_EPSILON);
         $this->assertEqualsWithDelta(2.0, $config->getThresholds()['red'], PHP_FLOAT_EPSILON);
-        $this->assertSame('.dependency-age-cache', $config->getCacheFile());
+        $this->assertSame('.dependency-age.cache', $config->getCacheFile());
         $this->assertFalse($config->shouldIncludeDev());
         $this->assertSame('cli', $config->getOutputFormat());
         $this->assertTrue($config->shouldShowColors());
@@ -111,7 +111,7 @@ final class ConfigurationTest extends TestCase
 
         // Should use all defaults
         $this->assertContains('psr/log', $config->getIgnorePackages());
-        $this->assertSame('.dependency-age-cache', $config->getCacheFile());
+        $this->assertSame('.dependency-age.cache', $config->getCacheFile());
         $this->assertFalse($config->shouldIncludeDev());
     }
 

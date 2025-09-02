@@ -124,7 +124,10 @@ final class DependencyAgeCommand extends BaseCommand
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $output->writeln('<info>Composer Dependency Age Plugin v0.1.0</info>');
+        // Display header as specified in requirements
+        $this->displayHeader($output);
+
+        $output->writeln('');
         $output->writeln('<comment>Analyzing dependency ages...</comment>');
 
         try {
@@ -218,22 +221,16 @@ final class DependencyAgeCommand extends BaseCommand
             $showColors = $config->shouldShowColors();
             $thresholds = $config->getThresholds();
 
-            $formattedOutput = $outputManager->format($format, $enrichedPackages, [
-                'show_colors' => $showColors,
-            ], $thresholds);
-
-            $output->write($formattedOutput);
-
-            // Show CLI summary for CLI format only
+            // Use different rendering for CLI format
             if ('cli' === $format) {
-                $summary = $ratingService->getRatingSummary($enrichedPackages, $thresholds);
-                $output->writeln('');
-                $output->writeln('<info>Summary:</info>');
-                $output->writeln(sprintf('  Total packages: %d', $summary['total_packages']));
-                $output->writeln(sprintf('  Health score: %.1f%%', $summary['health_score']));
-                if ($summary['has_critical']) {
-                    $output->writeln('<error>  ⚠️  Critical packages found!</error>');
-                }
+                $outputManager->renderCliTable($enrichedPackages, $output, [
+                    'show_colors' => $showColors,
+                ], $thresholds);
+            } else {
+                $formattedOutput = $outputManager->format($format, $enrichedPackages, [
+                    'show_colors' => $showColors,
+                ], $thresholds);
+                $output->write($formattedOutput);
             }
 
             // Check if we should fail on critical dependencies
@@ -253,5 +250,18 @@ final class DependencyAgeCommand extends BaseCommand
 
             return self::FAILURE;
         }
+    }
+
+    /**
+     * Display command header as specified in requirements.
+     */
+    private function displayHeader(OutputInterface $output): void
+    {
+        $output->writeln('<info>Composer Dependency Age</info>');
+        $output->writeln('<info>==============================</info>');
+        $output->writeln('');
+        $output->writeln(' A Composer plugin that analyzes the age of your project dependencies.');
+        $output->writeln('');
+        $output->writeln(' For more information and usage examples, run: `composer dependency-age --help`');
     }
 }

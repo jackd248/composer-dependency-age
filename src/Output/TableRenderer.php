@@ -27,30 +27,21 @@ use DateTimeImmutable;
 use KonradMichalik\ComposerDependencyAge\Model\Package;
 use KonradMichalik\ComposerDependencyAge\Service\AgeCalculationService;
 use KonradMichalik\ComposerDependencyAge\Service\RatingService;
+use Symfony\Component\Console\Helper\Table;
+use Symfony\Component\Console\Output\OutputInterface;
 
 /**
- * Service for rendering package data as CLI tables.
+ * Service for rendering package data as CLI tables using Symfony Console Table.
  */
 class TableRenderer
 {
-    private const DEFAULT_COLUMN_WIDTHS = [
-        'package' => 25,
-        'version' => 12,
-        'age' => 12,
-        'rating' => 10,
-        'latest' => 12,
-        'impact' => 12,
-        'notes' => 20,
-    ];
-
     public function __construct(
         private readonly AgeCalculationService $ageCalculationService,
         private readonly RatingService $ratingService,
-        private readonly ?ColorFormatter $colorFormatter = null,
     ) {}
 
     /**
-     * Render packages as a formatted CLI table.
+     * Render packages as a formatted CLI table using Symfony Console Table.
      *
      * @param array<Package>       $packages
      * @param array<string, mixed> $options
@@ -58,50 +49,41 @@ class TableRenderer
      */
     public function renderTable(
         array $packages,
+        OutputInterface $output,
         array $options = [],
         array $thresholds = [],
         ?DateTimeImmutable $referenceDate = null,
-    ): string {
+    ): void {
         if (empty($packages)) {
-            return "No packages found.\n";
+            $output->writeln('No packages found.');
+
+            return;
         }
 
         $columns = $options['columns'] ?? $this->getDefaultColumns();
-        $thresholds = $options['thresholds'] ?? [];
-        $referenceDate = $options['reference_date'] ?? null;
-        $showColors = $options['show_colors'] ?? true;
+        $thresholds = $thresholds ?: ($options['thresholds'] ?? []);
+        $referenceDate = $referenceDate ?: ($options['reference_date'] ?? null);
 
-        $tableData = $this->prepareTableData($packages, $columns, $thresholds, $referenceDate);
+        $table = new Table($output);
+        $table->setHeaders($this->getColumnHeaders($columns));
 
-        return $this->formatTable($tableData, $columns, $showColors);
-    }
+        // Add data rows
+        foreach ($packages as $package) {
+            $rating = $this->ratingService->ratePackage($package, $thresholds, $referenceDate);
+            $detailed = $this->ratingService->getDetailedRating($package, $thresholds, $referenceDate);
 
-    /**
-     * Render a compact summary table.
-     *
-     * @param array<Package>       $packages
-     * @param array<string, mixed> $options
-     */
-    public function renderSummaryTable(array $packages, array $options = []): string
-    {
-        if (empty($packages)) {
-            return "No packages found.\n";
+            $row = $this->formatTableRow($package, $rating, $detailed, $columns);
+            $table->addRow($row);
         }
 
-        $thresholds = $options['thresholds'] ?? [];
-        $referenceDate = $options['reference_date'] ?? null;
-        $showColors = $options['show_colors'] ?? true;
+        // Add summary row
+        $summaryRow = $this->formatSummaryRow($packages, $columns, $referenceDate);
+        if (!empty($summaryRow)) {
+            $table->addRow(array_fill(0, count($columns), '-'));  // Separator row
+            $table->addRow($summaryRow);
+        }
 
-        $summary = $this->ratingService->getRatingSummary($packages, $thresholds, $referenceDate);
-        $statistics = $this->ageCalculationService->calculateStatistics($packages, $referenceDate);
-
-        $output = [];
-        $output[] = $this->formatSummaryHeader('Dependency Age Summary', $showColors);
-        $output[] = '';
-        $output[] = $this->formatSummaryStats($summary, $statistics, $showColors);
-        $output[] = '';
-
-        return implode("\n", $output);
+        $table->render();
     }
 
     /**
@@ -115,13 +97,15 @@ class TableRenderer
     }
 
     /**
-     * Get available columns.
+     * Get column headers.
      *
-     * @return array<string, string>
+     * @param array<string> $columns
+     *
+     * @return array<string>
      */
-    public function getAvailableColumns(): array
+    private function getColumnHeaders(array $columns): array
     {
-        return [
+        $headerMap = [
             'package' => 'Package Name',
             'version' => 'Installed Version',
             'age' => 'Age',
@@ -131,165 +115,38 @@ class TableRenderer
             'notes' => 'Notes',
             'dev' => 'Dev Dependency',
         ];
+
+        return array_map(fn ($col) => $headerMap[$col] ?? ucfirst($col), $columns);
     }
 
     /**
-     * Prepare table data from packages.
+     * Format a single table row.
      *
-     * @param array<Package>       $packages
+     * @param array<string, mixed> $rating
+     * @param array<string, mixed> $detailed
      * @param array<string>        $columns
-     * @param array<string, mixed> $thresholds
      *
-     * @return array<array<string, string>>
+     * @return array<string>
      */
-    private function prepareTableData(array $packages, array $columns, array $thresholds, ?DateTimeImmutable $referenceDate): array
+    private function formatTableRow(Package $package, array $rating, array $detailed, array $columns): array
     {
-        $data = [];
-
-        foreach ($packages as $package) {
-            $rating = $this->ratingService->ratePackage($package, $thresholds, $referenceDate);
-            $detailed = $this->ratingService->getDetailedRating($package, $thresholds, $referenceDate);
-
-            $row = [];
-
-            foreach ($columns as $column) {
-                $row[$column] = match ($column) {
-                    'package' => $package->name,
-                    'version' => $package->version,
-                    'age' => $rating['age_formatted'] ?? 'Unknown',
-                    'rating' => $this->formatRating($rating, true),
-                    'latest' => $detailed['latest_info']['version'] ?? '-',
-                    'impact' => $this->formatImpact($detailed),
-                    'notes' => $this->formatNotes($package, $detailed),
-                    'dev' => $package->isDev ? 'Yes' : 'No',
-                    default => '-',
-                };
-            }
-
-            $data[] = $row;
-        }
-
-        return $data;
-    }
-
-    /**
-     * Format the table with headers and data.
-     *
-     * @param array<array<string, string>> $data
-     * @param array<string>                $columns
-     */
-    private function formatTable(array $data, array $columns, bool $showColors): string
-    {
-        if (empty($data)) {
-            return "No data to display.\n";
-        }
-
-        // Calculate column widths
-        $widths = $this->calculateColumnWidths($data, $columns);
-
-        $output = [];
-
-        // Header
-        $output[] = $this->formatTableHeader($columns, $widths, $showColors);
-        $output[] = $this->formatTableSeparator($widths);
-
-        // Data rows
-        foreach ($data as $row) {
-            $output[] = $this->formatTableRow($row, $columns, $widths);
-        }
-
-        $output[] = $this->formatTableSeparator($widths);
-
-        return implode("\n", $output)."\n";
-    }
-
-    /**
-     * Calculate optimal column widths based on content.
-     *
-     * @param array<array<string, string>> $data
-     * @param array<string>                $columns
-     *
-     * @return array<string, int>
-     */
-    private function calculateColumnWidths(array $data, array $columns): array
-    {
-        $widths = [];
+        $row = [];
 
         foreach ($columns as $column) {
-            $columnName = $this->getAvailableColumns()[$column] ?? ucfirst((string) $column);
-            $headerWidth = strlen($columnName);
-
-            $maxContentWidth = 0;
-            foreach ($data as $row) {
-                $content = $row[$column] ?? '';
-                $contentWidth = strlen(strip_tags($content)); // Remove any color codes
-                $maxContentWidth = max($maxContentWidth, $contentWidth);
-            }
-
-            $defaultWidth = self::DEFAULT_COLUMN_WIDTHS[$column] ?? 15;
-            $widths[$column] = max($headerWidth, $maxContentWidth, $defaultWidth);
+            $row[] = match ($column) {
+                'package' => $package->name,
+                'version' => $package->version,
+                'age' => $rating['age_formatted'] ?? 'Unknown',
+                'rating' => $this->formatRating($rating),
+                'latest' => $this->formatLatestVersion($package, $detailed),
+                'impact' => $this->formatImpact($package, $detailed),
+                'notes' => $this->formatNotes($package, $detailed),
+                'dev' => $package->isDev ? 'Yes' : 'No',
+                default => '',
+            };
         }
 
-        return $widths;
-    }
-
-    /**
-     * Format table header.
-     *
-     * @param array<string>      $columns
-     * @param array<string, int> $widths
-     */
-    private function formatTableHeader(array $columns, array $widths, bool $showColors): string
-    {
-        $headers = [];
-
-        foreach ($columns as $column) {
-            $header = $this->getAvailableColumns()[$column] ?? ucfirst((string) $column);
-            $headers[] = str_pad($header, $widths[$column]);
-        }
-
-        $headerRow = implode(' | ', $headers);
-
-        if ($showColors && $this->colorFormatter) {
-            return $this->colorFormatter->style($headerRow, 'bold');
-        }
-
-        return $showColors ? "\033[1m{$headerRow}\033[0m" : $headerRow; // Fallback to ANSI if no formatter
-    }
-
-    /**
-     * Format table separator line.
-     *
-     * @param array<string, int> $widths
-     */
-    private function formatTableSeparator(array $widths): string
-    {
-        $separators = [];
-
-        foreach ($widths as $width) {
-            $separators[] = str_repeat('-', $width);
-        }
-
-        return implode('-|-', $separators);
-    }
-
-    /**
-     * Format a table row.
-     *
-     * @param array<string, string> $row
-     * @param array<string>         $columns
-     * @param array<string, int>    $widths
-     */
-    private function formatTableRow(array $row, array $columns, array $widths): string
-    {
-        $cells = [];
-
-        foreach ($columns as $column) {
-            $content = $row[$column] ?? '-';
-            $cells[] = str_pad($content, $widths[$column]);
-        }
-
-        return implode(' | ', $cells);
+        return $row;
     }
 
     /**
@@ -297,15 +154,13 @@ class TableRenderer
      *
      * @param array<string, mixed> $rating
      */
-    private function formatRating(array $rating, bool $withEmoji = true): string
+    private function formatRating(array $rating): string
     {
         if ('unknown' === $rating['category']) {
-            $text = $withEmoji ? '⚪ Unknown' : 'Unknown';
-
-            return $this->colorFormatter ? $this->colorFormatter->muted($text) : $text;
+            return '⚪ Unknown';
         }
 
-        $emoji = $withEmoji ? $rating['emoji'].' ' : '';
+        $emoji = $rating['emoji'] ?? '';
         $description = match ($rating['category']) {
             'green' => 'Current',
             'yellow' => 'Outdated',
@@ -313,13 +168,23 @@ class TableRenderer
             default => 'Unknown',
         };
 
-        $text = $emoji.$description;
+        return $emoji.' '.$description;
+    }
 
-        if ($this->colorFormatter) {
-            return $this->colorFormatter->formatRating($text, $rating['category']);
+    /**
+     * Format latest version - only show if different from installed.
+     *
+     * @param array<string, mixed> $detailed
+     */
+    private function formatLatestVersion(Package $package, array $detailed): string
+    {
+        $latestVersion = $detailed['latest_info']['version'] ?? null;
+
+        if (null === $latestVersion || $latestVersion === $package->version) {
+            return '';  // Don't show if same as installed or not available
         }
 
-        return $text;
+        return $latestVersion;
     }
 
     /**
@@ -327,10 +192,17 @@ class TableRenderer
      *
      * @param array<string, mixed> $detailed
      */
-    private function formatImpact(array $detailed): string
+    private function formatImpact(Package $package, array $detailed): string
     {
+        $latestVersion = $detailed['latest_info']['version'] ?? null;
+
+        // No impact if no update available or same version
+        if (null === $latestVersion || $latestVersion === $package->version) {
+            return '';
+        }
+
         if (null === $detailed['age_reduction']) {
-            return '-';
+            return '';
         }
 
         $reduction = $detailed['age_reduction'];
@@ -351,7 +223,9 @@ class TableRenderer
             $notes[] = 'Dev';
         }
 
-        if (null !== $detailed['latest_info']) {
+        // Only show "Update available" if there's actually a newer version
+        $latestVersion = $detailed['latest_info']['version'] ?? null;
+        if (null !== $latestVersion && $latestVersion !== $package->version) {
             $notes[] = 'Update available';
         }
 
@@ -359,79 +233,75 @@ class TableRenderer
             $notes[] = 'Critical';
         }
 
-        return empty($notes) ? '-' : implode(', ', $notes);
+        return empty($notes) ? '' : implode(', ', $notes);
     }
 
     /**
-     * Format summary header.
-     */
-    private function formatSummaryHeader(string $title, bool $showColors): string
-    {
-        $separator = str_repeat('=', strlen($title));
-
-        if ($showColors && $this->colorFormatter) {
-            $formattedTitle = $this->colorFormatter->header($title);
-
-            return "{$formattedTitle}\n{$separator}";
-        }
-
-        if ($showColors) {
-            return "\033[1m{$title}\033[0m\n{$separator}";
-        }
-
-        return "{$title}\n{$separator}";
-    }
-
-    /**
-     * Format summary statistics.
+     * Format summary row as specified in requirements.
      *
-     * @param array<string, mixed> $summary
+     * @param array<Package> $packages
+     * @param array<string>  $columns
+     *
+     * @return array<string>
+     */
+    private function formatSummaryRow(array $packages, array $columns, ?DateTimeImmutable $referenceDate): array
+    {
+        if (empty($packages)) {
+            return [];
+        }
+
+        $statistics = $this->ageCalculationService->calculateStatistics($packages, $referenceDate);
+
+        $row = [];
+        foreach ($columns as $column) {
+            $row[] = match ($column) {
+                'package' => '',  // Empty for first column
+                'version' => 'Total Age',
+                'age' => $this->formatTotalPackageAge($packages, $referenceDate),
+                'rating' => 'Average Age',
+                'latest' => $statistics['average_age_formatted'] ?? 'Unknown',
+                'impact' => 'Total Update Impact',
+                'notes' => $this->formatTotalUpdateImpact($statistics),
+                default => '',
+            };
+        }
+
+        return $row;
+    }
+
+    /**
+     * Calculate and format total age of all packages.
+     *
+     * @param array<Package> $packages
+     */
+    private function formatTotalPackageAge(array $packages, ?DateTimeImmutable $referenceDate): string
+    {
+        $totalAgeDays = 0;
+        foreach ($packages as $package) {
+            $age = $package->getAgeInDays($referenceDate);
+            if (null !== $age) {
+                $totalAgeDays += $age;
+            }
+        }
+
+        $totalAgeYears = $totalAgeDays / 365.25;
+
+        return sprintf('%.1f years', $totalAgeYears);
+    }
+
+    /**
+     * Format total update impact.
+     *
      * @param array<string, mixed> $statistics
      */
-    private function formatSummaryStats(array $summary, array $statistics, bool $showColors): string
+    private function formatTotalUpdateImpact(array $statistics): string
     {
-        $output = [];
-
-        // Distribution
-        $total = $summary['total_packages'];
-        if ($total > 0) {
-            $output[] = "Total packages: {$total}";
-            $output[] = sprintf('🟢 Current: %d (%.1f%%)', $summary['distribution']['green'], $summary['percentages']['green']);
-            $output[] = sprintf('🟡 Outdated: %d (%.1f%%)', $summary['distribution']['yellow'], $summary['percentages']['yellow']);
-            $output[] = sprintf('🔴 Critical: %d (%.1f%%)', $summary['distribution']['red'], $summary['percentages']['red']);
-
-            if ($summary['distribution']['unknown'] > 0) {
-                $output[] = sprintf('⚪ Unknown: %d (%.1f%%)', $summary['distribution']['unknown'], $summary['percentages']['unknown']);
-            }
-
-            $output[] = sprintf('Health score: %.1f%%', $summary['health_score']);
+        if (null === $statistics['potential_reduction_days']) {
+            return '';
         }
 
-        // Age statistics
-        if (null !== $statistics['average_age_days']) {
-            $output[] = '';
-            $output[] = 'Age statistics:';
-            $output[] = sprintf('Average age: %s', $statistics['average_age_formatted']);
-            $output[] = sprintf('Oldest package: %s', $this->ageCalculationService->formatAge((int) $statistics['oldest_age_days']));
-            $output[] = sprintf('Newest package: %s', $this->ageCalculationService->formatAge((int) $statistics['newest_age_days']));
-        }
+        $reductionMonths = $statistics['potential_reduction_days'] / 30.44;
 
-        if (null !== $statistics['potential_reduction_days']) {
-            $potentialReduction = $this->ageCalculationService->formatAge((int) $statistics['potential_reduction_days']);
-            $output[] = sprintf('Potential age reduction: %s', $potentialReduction);
-        }
-
-        return implode("\n", $output);
-    }
-
-    /**
-     * Set custom column widths.
-     *
-     * @param array<string, int> $widths
-     */
-    public function setColumnWidths(array $widths): self
-    {
-        // This could be used for custom width configuration
-        return $this;
+        return sprintf('- %.1f months', $reductionMonths);
     }
 }

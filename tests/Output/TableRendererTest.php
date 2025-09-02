@@ -31,6 +31,7 @@ use KonradMichalik\ComposerDependencyAge\Output\TableRenderer;
 use KonradMichalik\ComposerDependencyAge\Service\AgeCalculationService;
 use KonradMichalik\ComposerDependencyAge\Service\RatingService;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Console\Output\BufferedOutput;
 
 /**
  * Test the TableRenderer class.
@@ -50,9 +51,11 @@ final class TableRendererTest extends TestCase
 
     public function testRenderTableWithEmptyPackages(): void
     {
-        $result = $this->renderer->renderTable([]);
+        $output = new BufferedOutput();
+        $this->renderer->renderTable([], $output);
+        $result = $output->fetch();
 
-        $this->assertSame("No packages found.\n", $result);
+        $this->assertStringContainsString('No packages found', $result);
     }
 
     public function testRenderTableWithSinglePackage(): void
@@ -67,10 +70,12 @@ final class TableRendererTest extends TestCase
             latestReleaseDate: new DateTimeImmutable('2023-06-01'),
         );
 
-        $result = $this->renderer->renderTable([$package], [
+        $output = new BufferedOutput();
+        $this->renderer->renderTable([$package], $output, [
             'reference_date' => $referenceDate,
             'show_colors' => false,
-        ]);
+        ], [], $referenceDate);
+        $result = $output->fetch();
 
         $this->assertStringContainsString('doctrine/orm', $result);
         $this->assertStringContainsString('2.14.0', $result);
@@ -114,10 +119,12 @@ final class TableRendererTest extends TestCase
             ),
         ];
 
-        $result = $this->renderer->renderTable($packages, [
+        $output = new BufferedOutput();
+        $this->renderer->renderTable($packages, $output, [
             'reference_date' => $referenceDate,
             'show_colors' => false,
         ]);
+        $result = $output->fetch();
 
         $this->assertStringContainsString('doctrine/orm', $result);
         $this->assertStringContainsString('psr/log', $result);
@@ -144,11 +151,13 @@ final class TableRendererTest extends TestCase
             releaseDate: new DateTimeImmutable('2023-05-01'),
         );
 
-        $result = $this->renderer->renderTable([$package], [
+        $output = new BufferedOutput();
+        $this->renderer->renderTable([$package], [
             'columns' => ['package', 'version', 'dev'],
             'reference_date' => $referenceDate,
             'show_colors' => false,
-        ]);
+        ], $output);
+        $result = $output->fetch();
 
         $this->assertStringContainsString('Package Name', $result);
         $this->assertStringContainsString('Installed Version', $result);
@@ -172,10 +181,12 @@ final class TableRendererTest extends TestCase
             releaseDate: new DateTimeImmutable('2023-05-01'),
         );
 
-        $result = $this->renderer->renderTable([$package], [
+        $output = new BufferedOutput();
+        $this->renderer->renderTable([$package], $output, [
             'reference_date' => $referenceDate,
             'show_colors' => true,
         ]);
+        $result = $output->fetch();
 
         // Should contain ANSI escape codes for bold headers
         $this->assertStringContainsString("\033[1m", $result);
@@ -192,61 +203,15 @@ final class TableRendererTest extends TestCase
             releaseDate: new DateTimeImmutable('2023-05-01'),
         );
 
-        $result = $this->renderer->renderTable([$package], [
+        $output = new BufferedOutput();
+        $this->renderer->renderTable([$package], $output, [
             'reference_date' => $referenceDate,
             'show_colors' => false,
         ]);
+        $result = $output->fetch();
 
         // Should not contain ANSI escape codes
         $this->assertStringNotContainsString("\033[", $result);
-    }
-
-    public function testRenderSummaryTableWithEmptyPackages(): void
-    {
-        $result = $this->renderer->renderSummaryTable([]);
-
-        $this->assertSame("No packages found.\n", $result);
-    }
-
-    public function testRenderSummaryTableWithPackages(): void
-    {
-        $referenceDate = new DateTimeImmutable('2023-07-01');
-        $packages = [
-            new Package(
-                name: 'green/package',
-                version: '1.0.0',
-                isDev: false,
-                releaseDate: new DateTimeImmutable('2023-05-01'), // ~2 months old
-            ),
-            new Package(
-                name: 'yellow/package',
-                version: '2.0.0',
-                isDev: false,
-                releaseDate: new DateTimeImmutable('2022-12-01'), // ~7 months old
-            ),
-            new Package(
-                name: 'red/package',
-                version: '3.0.0',
-                isDev: false,
-                releaseDate: new DateTimeImmutable('2022-01-01'), // ~18 months old
-            ),
-        ];
-
-        $result = $this->renderer->renderSummaryTable($packages, [
-            'reference_date' => $referenceDate,
-            'show_colors' => false,
-        ]);
-
-        $this->assertStringContainsString('Dependency Age Summary', $result);
-        $this->assertStringContainsString('Total packages: 3', $result);
-        $this->assertStringContainsString('🟢 Current: 1', $result);
-        $this->assertStringContainsString('🟡 Outdated: 1', $result);
-        $this->assertStringContainsString('🔴 Critical: 1', $result);
-        $this->assertStringContainsString('Health score:', $result);
-        $this->assertStringContainsString('Age statistics:', $result);
-        $this->assertStringContainsString('Average age:', $result);
-        $this->assertStringContainsString('Oldest package:', $result);
-        $this->assertStringContainsString('Newest package:', $result);
     }
 
     public function testGetDefaultColumns(): void
@@ -257,33 +222,15 @@ final class TableRendererTest extends TestCase
         $this->assertSame($expectedColumns, $columns);
     }
 
-    public function testGetAvailableColumns(): void
-    {
-        $columns = $this->renderer->getAvailableColumns();
-
-        $this->assertIsArray($columns);
-        $this->assertArrayHasKey('package', $columns);
-        $this->assertArrayHasKey('version', $columns);
-        $this->assertArrayHasKey('age', $columns);
-        $this->assertArrayHasKey('rating', $columns);
-        $this->assertArrayHasKey('latest', $columns);
-        $this->assertArrayHasKey('impact', $columns);
-        $this->assertArrayHasKey('notes', $columns);
-        $this->assertArrayHasKey('dev', $columns);
-
-        // Check column descriptions are meaningful
-        $this->assertEquals('Package Name', $columns['package']);
-        $this->assertEquals('Installed Version', $columns['version']);
-        $this->assertEquals('Dev Dependency', $columns['dev']);
-    }
-
     public function testRenderTableWithUnknownAgePackage(): void
     {
         $package = new Package('unknown/package', '1.0.0'); // No release date
 
-        $result = $this->renderer->renderTable([$package], [
+        $output = new BufferedOutput();
+        $this->renderer->renderTable([$package], $output, [
             'show_colors' => false,
         ]);
+        $result = $output->fetch();
 
         $this->assertStringContainsString('unknown/package', $result);
         $this->assertStringContainsString('Unknown', $result);
@@ -303,11 +250,13 @@ final class TableRendererTest extends TestCase
         // Custom thresholds: 30 days green, 90 days yellow
         $customThresholds = ['green' => 30, 'yellow' => 90];
 
-        $result = $this->renderer->renderTable([$package], [
+        $output = new BufferedOutput();
+        $this->renderer->renderTable([$package], $output, [
             'thresholds' => $customThresholds,
             'reference_date' => $referenceDate,
             'show_colors' => false,
         ]);
+        $result = $output->fetch();
 
         // With custom thresholds, 2 months (~60 days) should be yellow
         $this->assertStringContainsString('🟡 Outdated', $result);
@@ -321,10 +270,12 @@ final class TableRendererTest extends TestCase
             new Package('very-long-package-name-that-should-affect-column-width', '10.0.0-beta', false, new DateTimeImmutable('2023-04-01')),
         ];
 
-        $result = $this->renderer->renderTable($packages, [
+        $output = new BufferedOutput();
+        $this->renderer->renderTable($packages, $output, [
             'reference_date' => $referenceDate,
             'show_colors' => false,
         ]);
+        $result = $output->fetch();
 
         $lines = explode("\n", $result);
         $headerLine = $lines[0];
@@ -363,10 +314,12 @@ final class TableRendererTest extends TestCase
             releaseDate: new DateTimeImmutable('2023-05-01'),
         );
 
-        $result = $this->renderer->renderTable([$packageWithUpdate, $packageWithoutUpdate], [
+        $output = new BufferedOutput();
+        $this->renderer->renderTable([$packageWithUpdate, $packageWithoutUpdate], $output, [
             'reference_date' => $referenceDate,
             'show_colors' => false,
         ]);
+        $result = $output->fetch();
 
         // Package with update should show impact
         $this->assertStringContainsString('-', $result); // Impact column should show reduction
@@ -406,10 +359,12 @@ final class TableRendererTest extends TestCase
             latestReleaseDate: new DateTimeImmutable('2023-06-01'),
         );
 
-        $result = $this->renderer->renderTable([$devPackage], [
+        $output = new BufferedOutput();
+        $this->renderer->renderTable([$devPackage], $output, [
             'reference_date' => $referenceDate,
             'show_colors' => false,
         ]);
+        $result = $output->fetch();
 
         $this->assertStringContainsString('Dev', $result); // Should show dev flag
         $this->assertStringContainsString('Critical', $result); // Should show critical flag
@@ -431,10 +386,12 @@ final class TableRendererTest extends TestCase
     #[\PHPUnit\Framework\Attributes\DataProvider('columnWidthProvider')]
     public function testColumnWidthCalculation(array $packages, array $columns, string $expectedContent): void
     {
-        $result = $this->renderer->renderTable($packages, [
+        $output = new BufferedOutput();
+        $this->renderer->renderTable($packages, $output, [
             'columns' => $columns,
             'show_colors' => false,
         ]);
+        $result = $output->fetch();
 
         $this->assertStringContainsString($expectedContent, $result);
 
@@ -466,10 +423,12 @@ final class TableRendererTest extends TestCase
             new Package('test2/package', '2.0.0', true, new DateTimeImmutable('2023-04-01')),
         ];
 
-        $result = $this->renderer->renderTable($packages, [
+        $output = new BufferedOutput();
+        $this->renderer->renderTable($packages, $output, [
             'reference_date' => $referenceDate,
             'show_colors' => false,
         ]);
+        $result = $output->fetch();
 
         $lines = explode("\n", $result);
 
@@ -504,10 +463,12 @@ final class TableRendererTest extends TestCase
             releaseDate: new DateTimeImmutable('2023-05-01'),
         );
 
-        $result = $renderer->renderTable([$package], [
+        $output = new BufferedOutput();
+        $renderer->renderTable([$package], $output, [
             'reference_date' => $referenceDate,
             'show_colors' => true,
         ]);
+        $result = $output->fetch();
 
         // Should contain ANSI color codes from ColorFormatter
         $this->assertStringContainsString("\033[", $result);
@@ -533,8 +494,8 @@ final class TableRendererTest extends TestCase
         ]);
 
         // Should contain ANSI color codes for header formatting
-        $this->assertStringContainsString("\033[", $result);
-        $this->assertStringContainsString('Dependency Age Summary', $result);
-        $this->assertStringContainsString('Total packages: 1', $result);
+        $this->assertStringContainsString("\033[", (string) $result);
+        $this->assertStringContainsString('Dependency Age Summary', (string) $result);
+        $this->assertStringContainsString('Total packages: 1', (string) $result);
     }
 }

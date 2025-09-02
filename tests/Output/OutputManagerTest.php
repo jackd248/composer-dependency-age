@@ -30,6 +30,7 @@ use KonradMichalik\ComposerDependencyAge\Output\OutputManager;
 use KonradMichalik\ComposerDependencyAge\Service\AgeCalculationService;
 use KonradMichalik\ComposerDependencyAge\Service\RatingService;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Console\Output\BufferedOutput;
 
 /**
  * Test output manager functionality.
@@ -56,19 +57,22 @@ final class OutputManagerTest extends TestCase
         );
     }
 
-    public function testFormatCli(): void
+    public function testRenderCliTable(): void
     {
-        $output = $this->outputManager->format(
-            'cli',
+        $output = new BufferedOutput();
+
+        $this->outputManager->renderCliTable(
             [$this->testPackage],
+            $output,
             ['show_colors' => false],
             [],
             $this->referenceDate,
         );
 
-        $this->assertIsString($output);
-        $this->assertStringContainsString('vendor/test', $output);
-        $this->assertStringContainsString('1.0.0', $output);
+        $result = $output->fetch();
+        $this->assertIsString($result);
+        $this->assertStringContainsString('vendor/test', $result);
+        $this->assertStringContainsString('1.0.0', $result);
     }
 
     public function testFormatJson(): void
@@ -148,7 +152,9 @@ final class OutputManagerTest extends TestCase
 
     public function testFormatWithEmptyPackages(): void
     {
-        $cliOutput = $this->outputManager->format('cli', []);
+        $output = new BufferedOutput();
+        $this->outputManager->renderCliTable([], $output);
+        $cliOutput = $output->fetch();
         $this->assertStringContainsString('No packages found', $cliOutput);
 
         $jsonOutput = $this->outputManager->format('json', []);
@@ -205,22 +211,24 @@ final class OutputManagerTest extends TestCase
         $this->assertArrayHasKey('packages', $data);
     }
 
-    public function testFormatWithOptions(): void
+    public function testRenderCliTableWithOptions(): void
     {
         $options = [
             'show_colors' => true,
             'custom_option' => 'value',
         ];
 
-        $cliOutput = $this->outputManager->format(
-            'cli',
+        $output = new BufferedOutput();
+        $this->outputManager->renderCliTable(
             [$this->testPackage],
+            $output,
             $options,
             [],
             $this->referenceDate,
         );
 
-        $this->assertIsString($cliOutput);
+        $result = $output->fetch();
+        $this->assertIsString($result);
     }
 
     public function testConsistentDataBetweenFormats(): void
@@ -251,7 +259,9 @@ final class OutputManagerTest extends TestCase
         );
 
         // All formats should handle packages without release dates gracefully
-        $cliOutput = $this->outputManager->format('cli', [$packageWithoutDate]);
+        $output = new BufferedOutput();
+        $this->outputManager->renderCliTable([$packageWithoutDate], $output);
+        $cliOutput = $output->fetch();
         $this->assertIsString($cliOutput);
 
         $jsonOutput = $this->outputManager->format('json', [$packageWithoutDate]);

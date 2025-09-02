@@ -52,7 +52,7 @@ final class CachePathServiceTest extends TestCase
 
         // Should return some cache path
         $this->assertNotEmpty($result);
-        $this->assertStringContainsString('.dependency-age-cache', $result);
+        $this->assertStringContainsString('.dependency-age.cache', $result);
     }
 
     public function testGetSystemCachePath(): void
@@ -60,7 +60,7 @@ final class CachePathServiceTest extends TestCase
         $result = $this->service->getSystemCachePath();
 
         $this->assertNotEmpty($result);
-        $this->assertStringContainsString('.dependency-age-cache', $result);
+        $this->assertStringContainsString('.dependency-age.cache', $result);
     }
 
     public function testGetSystemCachePathPlatformSpecific(): void
@@ -83,7 +83,7 @@ final class CachePathServiceTest extends TestCase
     public function testIsCacheDirectoryWritableForExistingDirectory(): void
     {
         $tempDir = sys_get_temp_dir();
-        $cachePath = $tempDir.'/.dependency-age-cache';
+        $cachePath = $tempDir.'/.dependency-age.cache';
 
         $result = $this->service->isCacheDirectoryWritable($cachePath);
 
@@ -93,7 +93,7 @@ final class CachePathServiceTest extends TestCase
 
     public function testIsCacheDirectoryWritableForNonExistentDirectory(): void
     {
-        $cachePath = '/non-existent-directory/.dependency-age-cache';
+        $cachePath = '/non-existent-directory/.dependency-age.cache';
 
         $result = $this->service->isCacheDirectoryWritable($cachePath);
 
@@ -109,12 +109,12 @@ final class CachePathServiceTest extends TestCase
         $this->assertNotEmpty($paths);
 
         // Should contain at least current directory and temp directory
-        $currentDirPath = getcwd().'/.dependency-age-cache';
+        $currentDirPath = getcwd().'/.dependency-age.cache';
         $this->assertContains($currentDirPath, $paths);
 
         // All paths should end with cache filename
         foreach ($paths as $path) {
-            $this->assertStringContainsString('.dependency-age-cache', $path);
+            $this->assertStringContainsString('.dependency-age.cache', $path);
         }
 
         // Should not contain duplicates
@@ -146,7 +146,7 @@ final class CachePathServiceTest extends TestCase
             // Windows paths might contain backslashes or use forward slashes
             'Windows' => $this->assertTrue(
                 str_contains($systemPath, 'composer-dependency-age')
-                && str_contains($systemPath, '.dependency-age-cache'),
+                && str_contains($systemPath, '.dependency-age.cache'),
             ),
             'Darwin' => $this->assertStringContainsString('Library/Caches/composer-dependency-age', $systemPath),
             // Linux and other Unix-like systems
@@ -169,6 +169,6 @@ final class CachePathServiceTest extends TestCase
         $this->assertIsString($path);
 
         // Should contain the cache filename
-        $this->assertStringContainsString('.dependency-age-cache', $path);
+        $this->assertStringContainsString('.dependency-age.cache', $path);
     }
 }
