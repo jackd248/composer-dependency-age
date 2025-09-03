@@ -1,8 +1,13 @@
+<div align="center">
+
 # Composer Dependency Age
 
-[![GitHub License](https://img.shields.io/github/license/konradmichalik/composer-dependency-age)](LICENSE)
-[![PHP Version](https://img.shields.io/badge/php-%3E%3D8.1-blue)](https://php.net)
-[![Composer Version](https://img.shields.io/badge/composer-%5E2.0-blue)](https://getcomposer.org)
+[![Coverage](https://img.shields.io/coverallsCoverage/github/jackd248/composer-dependency-age?logo=coveralls)](https://coveralls.io/github/jackd248/composer-dependency-age)
+[![CGL](https://img.shields.io/github/actions/workflow/status/jackd248/composer-dependency-age/cgl.yml?label=cgl&logo=github)](https://github.com/jackd248/composer-dependency-age/actions/workflows/cgl.yml)
+[![Tests](https://img.shields.io/github/actions/workflow/status/jackd248/composer-dependency-age/tests.yml?label=tests&logo=github)](https://github.com/jackd248/composer-dependency-age/actions/workflows/tests.yml)
+[![Supported PHP Versions](https://img.shields.io/packagist/dependency-v/konradmichalik/composer-dependency-age/php?logo=php)](https://packagist.org/packages/konradmichalik/composer-dependency-age)
+
+</div>
 
 A Composer plugin that analyzes the age of your project dependencies and provides neutral categorization to help you understand your dependency landscape. No risk assessment - just clear, objective information about when your dependencies were last released.
 
@@ -15,36 +20,27 @@ A Composer plugin that analyzes the age of your project dependencies and provide
 - **CI/CD Ready** - Perfect for automated dependency auditing in your build pipelines
 - **Highly Configurable** - Customize thresholds, ignore lists, and output preferences
 
-## 🚀 Installation
-
-Install the plugin globally or per project via Composer:
+## 🔥 Installation
 
 ```bash
-composer require konradmichalik/composer-dependency-age
+composer require konradmichalik/composer-dependency-age --dev
 ```
-
-The plugin integrates automatically with Composer and adds the `dependency-age` command.
 
 ## 📊 Usage
 
-### Basic Analysis
+### Command
 ```bash
 composer dependency-age
 ```
 
-### Focus on Direct Dependencies
-```bash
-composer dependency-age --direct
-```
+### Automatic Analysis
+The plugin automatically runs after `composer install` and `composer update` operations, providing immediate feedback on your dependency landscape.
 
-### JSON Output for CI/CD
-```bash
-composer dependency-age --format json
-```
-
-### GitHub-Formatted Output
-```bash
-composer dependency-age --format github
+```shell
+$ composer install
+...
+Dependency age ~ // 21.9 years in total (9 months average per package). Use composer dependency-age for full details.
+...
 ```
 
 ## 📝 Configuration
@@ -76,7 +72,40 @@ composer dependency-age --format github
       "ignore": ["psr/log", "psr/container"],
       "output_format": "cli",
       "include_dev": false,
-      "cache_ttl": 86400
+      "cache_ttl": 86400,
+      "event_integration": true,
+      "event_operations": ["install", "update"],
+      "event_analysis_limit": 10
+    }
+  }
+}
+```
+
+#### Event Integration Options
+
+| Option | Description | Default | Example |
+|--------|-------------|---------|---------|
+| `event_integration` | Enable/disable automatic analysis after composer operations | `true` | `false` |
+| `event_operations` | Which operations trigger analysis | `["install", "update"]` | `["install"]` |
+| `event_analysis_limit` | Maximum packages to analyze in quick mode | `10` | `20` |
+
+**To disable composer hooks entirely:**
+```json
+{
+  "extra": {
+    "dependency-age": {
+      "event_integration": false
+    }
+  }
+}
+```
+
+**To run analysis only after install (not update):**
+```json
+{
+  "extra": {
+    "dependency-age": {
+      "event_operations": ["install"]
     }
   }
 }
@@ -84,47 +113,14 @@ composer dependency-age --format github
 
 ## 📈 Age Categories
 
-| Category | Emoji | Timeframe | Description |
-|----------|-------|-----------|-------------|
-| Current | ✅ | ≤ 6 months | Recently released dependencies |
-| Medium | ⚠️ | ≤ 12 months | Moderately aged dependencies |
-| Old | ❗ | > 12 months | Dependencies released over a year ago |
-| Unknown | ❓ | - | Dependencies without release date information |
+| Category | Sign | Timeframe | Description |
+|----------|------|-----------|-------------|
+| Current | ✓    | ≤ 6 months | Recently released dependencies |
+| Medium | ~️   | ≤ 12 months | Moderately aged dependencies |
+| Old | !    | > 12 months | Dependencies released over a year ago |
+| Unknown | ?    | - | Dependencies without release date information |
 
-## 💡 Output Formats
-
-### CLI Table (Default)
-Human-readable table with colors, symbols, and summary statistics. Perfect for manual review and development workflow.
-
-### JSON Format
-Machine-readable output ideal for:
-- CI/CD pipeline integration
-- Custom reporting tools
-- Automated dependency monitoring
-- Data analysis workflows
-
-### GitHub Format
-Markdown-optimized output designed for:
-- Pull request comments
-- Issue tracking
-- GitHub Actions integration
-- Team communication
-
-## 🔧 Integration
-
-### Automatic Analysis
-The plugin automatically runs after `composer install` and `composer update` operations, providing immediate feedback on your dependency landscape.
-
-### CI/CD Pipeline
-```bash
-# Check dependency ages in CI
-composer dependency-age --format json > dependency-report.json
-
-# Focus on direct dependencies only
-composer dependency-age --direct --no-colors
-```
-
-## 🤝 Contributing
+## 🧑‍💻 Contributing
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
