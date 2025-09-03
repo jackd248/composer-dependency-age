@@ -75,7 +75,7 @@ final class DependencyAgeCommandCacheTest extends TestCase
         $this->assertContains($result, [Command::SUCCESS, Command::FAILURE]);
 
         $output = $commandTester->getDisplay();
-        $this->assertStringContainsString('Composer Dependency Age Plugin', $output);
+        $this->assertStringContainsString('Composer Dependency Age', $output);
     }
 
     public function testCommandWithoutNoCacheOption(): void
@@ -89,7 +89,7 @@ final class DependencyAgeCommandCacheTest extends TestCase
         $this->assertContains($result, [Command::SUCCESS, Command::FAILURE]);
 
         $output = $commandTester->getDisplay();
-        $this->assertStringContainsString('Composer Dependency Age Plugin', $output);
+        $this->assertStringContainsString('Composer Dependency Age', $output);
     }
 
     public function testNoCacheOptionIsBoolean(): void

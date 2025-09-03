@@ -87,7 +87,7 @@ final class JsonFormatterTest extends TestCase
         $this->assertEquals($releaseDate->format('c'), $packageData['installed_release_date']);
         $this->assertIsInt($packageData['age_days']);
         $this->assertIsString($packageData['age_formatted']);
-        $this->assertContains($packageData['rating'], ['green', 'yellow', 'red']);
+        $this->assertContains($packageData['rating'], ['current', 'medium', 'old']);
         $this->assertEquals('1.2.0', $packageData['latest_version']);
         $this->assertEquals($latestReleaseDate->format('c'), $packageData['latest_release_date']);
         $this->assertIsInt($packageData['latest_age_days']);
@@ -166,9 +166,9 @@ final class JsonFormatterTest extends TestCase
 
         // Check ratings
         $ratings = array_column($data['packages'], 'rating', 'name');
-        $this->assertEquals('green', $ratings['vendor/fresh']);
-        $this->assertEquals('yellow', $ratings['vendor/aging']);
-        $this->assertEquals('red', $ratings['vendor/critical']);
+        $this->assertEquals('current', $ratings['vendor/fresh']);
+        $this->assertEquals('medium', $ratings['vendor/aging']);
+        $this->assertEquals('old', $ratings['vendor/critical']);
     }
 
     public function testFormatAsArray(): void

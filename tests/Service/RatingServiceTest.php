@@ -66,11 +66,11 @@ final class RatingServiceTest extends TestCase
     {
         $referenceDate = new DateTimeImmutable('2023-07-01');
         $releaseDate = new DateTimeImmutable('2023-04-01'); // ~3 months old
-        $package = new Package('test/package', '1.0.0', false, $releaseDate);
+        $package = new Package('test/package', '1.0.0', false, true, $releaseDate);
 
         $rating = $this->service->ratePackage($package, [], $referenceDate);
 
-        $this->assertEquals('green', $rating['category']);
+        $this->assertEquals('current', $rating['category']);
         $this->assertEquals('🟢', $rating['emoji']);
         $this->assertEquals('Current', $rating['description']);
         $this->assertEqualsWithDelta(91, $rating['age_days'], 1);
@@ -81,11 +81,11 @@ final class RatingServiceTest extends TestCase
     {
         $referenceDate = new DateTimeImmutable('2023-07-01');
         $releaseDate = new DateTimeImmutable('2022-12-01'); // ~7 months old
-        $package = new Package('test/package', '1.0.0', false, $releaseDate);
+        $package = new Package('test/package', '1.0.0', false, true, $releaseDate);
 
         $rating = $this->service->ratePackage($package, [], $referenceDate);
 
-        $this->assertEquals('yellow', $rating['category']);
+        $this->assertEquals('medium', $rating['category']);
         $this->assertEquals('🟡', $rating['emoji']);
         $this->assertEquals('Outdated', $rating['description']);
         $this->assertGreaterThan(183, $rating['age_days']); // More than 6 months
@@ -96,11 +96,11 @@ final class RatingServiceTest extends TestCase
     {
         $referenceDate = new DateTimeImmutable('2023-07-01');
         $releaseDate = new DateTimeImmutable('2022-01-01'); // ~18 months old
-        $package = new Package('test/package', '1.0.0', false, $releaseDate);
+        $package = new Package('test/package', '1.0.0', false, true, $releaseDate);
 
         $rating = $this->service->ratePackage($package, [], $referenceDate);
 
-        $this->assertEquals('red', $rating['category']);
+        $this->assertEquals('old', $rating['category']);
         $this->assertEquals('🔴', $rating['emoji']);
         $this->assertEquals('Critical', $rating['description']);
         $this->assertGreaterThan(365, $rating['age_days']); // More than 12 months
@@ -110,13 +110,13 @@ final class RatingServiceTest extends TestCase
     {
         $referenceDate = new DateTimeImmutable('2023-07-01');
         $releaseDate = new DateTimeImmutable('2023-05-01'); // ~2 months old
-        $package = new Package('test/package', '1.0.0', false, $releaseDate);
+        $package = new Package('test/package', '1.0.0', false, true, $releaseDate);
 
         // Custom thresholds: 30 days green, 90 days yellow
-        $customThresholds = ['green' => 30, 'yellow' => 90];
+        $customThresholds = ['current' => 30, 'medium' => 90];
         $rating = $this->service->ratePackage($package, $customThresholds, $referenceDate);
 
-        $this->assertEquals('yellow', $rating['category']);
+        $this->assertEquals('medium', $rating['category']);
         $this->assertEquals('🟡', $rating['emoji']);
     }
 
@@ -124,18 +124,18 @@ final class RatingServiceTest extends TestCase
     {
         $referenceDate = new DateTimeImmutable('2023-07-01');
         $packages = [
-            new Package('green/package', '1.0.0', false, new DateTimeImmutable('2023-05-01')), // ~2 months
-            new Package('yellow/package', '2.0.0', false, new DateTimeImmutable('2022-12-01')), // ~7 months
-            new Package('red/package', '3.0.0', false, new DateTimeImmutable('2022-01-01')), // ~18 months
+            new Package('green/package', '1.0.0', false, true, new DateTimeImmutable('2023-05-01')), // ~2 months
+            new Package('yellow/package', '2.0.0', false, true, new DateTimeImmutable('2022-12-01')), // ~7 months
+            new Package('red/package', '3.0.0', false, true, new DateTimeImmutable('2022-01-01')), // ~18 months
             new Package('unknown/package', '4.0.0'), // No release date
         ];
 
         $ratings = $this->service->ratePackages($packages, [], $referenceDate);
 
         $this->assertCount(4, $ratings);
-        $this->assertEquals('green', $ratings['green/package']['category']);
-        $this->assertEquals('yellow', $ratings['yellow/package']['category']);
-        $this->assertEquals('red', $ratings['red/package']['category']);
+        $this->assertEquals('current', $ratings['green/package']['category']);
+        $this->assertEquals('medium', $ratings['yellow/package']['category']);
+        $this->assertEquals('old', $ratings['red/package']['category']);
         $this->assertEquals('unknown', $ratings['unknown/package']['category']);
     }
 
@@ -143,18 +143,18 @@ final class RatingServiceTest extends TestCase
     {
         $referenceDate = new DateTimeImmutable('2023-07-01');
         $packages = [
-            new Package('green1/package', '1.0.0', false, new DateTimeImmutable('2023-05-01')),
-            new Package('green2/package', '1.0.0', false, new DateTimeImmutable('2023-04-01')),
-            new Package('yellow1/package', '2.0.0', false, new DateTimeImmutable('2022-12-01')),
-            new Package('red1/package', '3.0.0', false, new DateTimeImmutable('2022-01-01')),
+            new Package('green1/package', '1.0.0', false, true, new DateTimeImmutable('2023-05-01')),
+            new Package('green2/package', '1.0.0', false, true, new DateTimeImmutable('2023-04-01')),
+            new Package('yellow1/package', '2.0.0', false, true, new DateTimeImmutable('2022-12-01')),
+            new Package('red1/package', '3.0.0', false, true, new DateTimeImmutable('2022-01-01')),
             new Package('unknown/package', '4.0.0'),
         ];
 
         $distribution = $this->service->getRatingDistribution($packages, [], $referenceDate);
 
-        $this->assertEquals(2, $distribution['green']);
-        $this->assertEquals(1, $distribution['yellow']);
-        $this->assertEquals(1, $distribution['red']);
+        $this->assertEquals(2, $distribution['current']);
+        $this->assertEquals(1, $distribution['medium']);
+        $this->assertEquals(1, $distribution['old']);
         $this->assertEquals(1, $distribution['unknown']);
     }
 
@@ -162,14 +162,14 @@ final class RatingServiceTest extends TestCase
     {
         $referenceDate = new DateTimeImmutable('2023-07-01');
         $packages = [
-            new Package('green/package', '1.0.0', false, new DateTimeImmutable('2023-05-01')),
-            new Package('yellow/package', '2.0.0', false, new DateTimeImmutable('2022-12-01')),
-            new Package('red/package', '3.0.0', false, new DateTimeImmutable('2022-01-01')),
+            new Package('green/package', '1.0.0', false, true, new DateTimeImmutable('2023-05-01')),
+            new Package('yellow/package', '2.0.0', false, true, new DateTimeImmutable('2022-12-01')),
+            new Package('red/package', '3.0.0', false, true, new DateTimeImmutable('2022-01-01')),
         ];
 
-        $greenPackages = $this->service->getPackagesByRating($packages, 'green', [], $referenceDate);
-        $yellowPackages = $this->service->getPackagesByRating($packages, 'yellow', [], $referenceDate);
-        $redPackages = $this->service->getPackagesByRating($packages, 'red', [], $referenceDate);
+        $greenPackages = $this->service->getPackagesByRating($packages, 'current', [], $referenceDate);
+        $yellowPackages = $this->service->getPackagesByRating($packages, 'medium', [], $referenceDate);
+        $redPackages = $this->service->getPackagesByRating($packages, 'old', [], $referenceDate);
 
         $this->assertCount(1, $greenPackages);
         $this->assertCount(1, $yellowPackages);
@@ -185,14 +185,14 @@ final class RatingServiceTest extends TestCase
 
         // Package collection with no critical packages
         $safePackages = [
-            new Package('green/package', '1.0.0', false, new DateTimeImmutable('2023-05-01')),
-            new Package('yellow/package', '2.0.0', false, new DateTimeImmutable('2022-12-01')),
+            new Package('green/package', '1.0.0', false, true, new DateTimeImmutable('2023-05-01')),
+            new Package('yellow/package', '2.0.0', false, true, new DateTimeImmutable('2022-12-01')),
         ];
 
         // Package collection with critical packages
         $criticalPackages = [
-            new Package('green/package', '1.0.0', false, new DateTimeImmutable('2023-05-01')),
-            new Package('red/package', '3.0.0', false, new DateTimeImmutable('2022-01-01')),
+            new Package('green/package', '1.0.0', false, true, new DateTimeImmutable('2023-05-01')),
+            new Package('red/package', '3.0.0', false, true, new DateTimeImmutable('2022-01-01')),
         ];
 
         $this->assertFalse($this->service->hasCriticalPackages($safePackages, [], $referenceDate));
@@ -203,22 +203,22 @@ final class RatingServiceTest extends TestCase
     {
         $referenceDate = new DateTimeImmutable('2023-07-01');
         $packages = [
-            new Package('green1/package', '1.0.0', false, new DateTimeImmutable('2023-05-01')),
-            new Package('green2/package', '1.0.0', false, new DateTimeImmutable('2023-04-01')),
-            new Package('yellow1/package', '2.0.0', false, new DateTimeImmutable('2022-12-01')),
-            new Package('red1/package', '3.0.0', false, new DateTimeImmutable('2022-01-01')),
+            new Package('green1/package', '1.0.0', false, true, new DateTimeImmutable('2023-05-01')),
+            new Package('green2/package', '1.0.0', false, true, new DateTimeImmutable('2023-04-01')),
+            new Package('yellow1/package', '2.0.0', false, true, new DateTimeImmutable('2022-12-01')),
+            new Package('red1/package', '3.0.0', false, true, new DateTimeImmutable('2022-01-01')),
         ];
 
         $summary = $this->service->getRatingSummary($packages, [], $referenceDate);
 
         $this->assertEquals(4, $summary['total_packages']);
-        $this->assertEquals(2, $summary['distribution']['green']);
-        $this->assertEquals(1, $summary['distribution']['yellow']);
-        $this->assertEquals(1, $summary['distribution']['red']);
+        $this->assertEquals(2, $summary['distribution']['current']);
+        $this->assertEquals(1, $summary['distribution']['medium']);
+        $this->assertEquals(1, $summary['distribution']['old']);
         $this->assertEquals(0, $summary['distribution']['unknown']);
-        $this->assertEqualsWithDelta(50.0, $summary['percentages']['green'], PHP_FLOAT_EPSILON);
-        $this->assertEqualsWithDelta(25.0, $summary['percentages']['yellow'], PHP_FLOAT_EPSILON);
-        $this->assertEqualsWithDelta(25.0, $summary['percentages']['red'], PHP_FLOAT_EPSILON);
+        $this->assertEqualsWithDelta(50.0, $summary['percentages']['current'], PHP_FLOAT_EPSILON);
+        $this->assertEqualsWithDelta(25.0, $summary['percentages']['medium'], PHP_FLOAT_EPSILON);
+        $this->assertEqualsWithDelta(25.0, $summary['percentages']['old'], PHP_FLOAT_EPSILON);
         $this->assertTrue($summary['has_critical']);
         $this->assertEqualsWithDelta(62.5, $summary['health_score'], PHP_FLOAT_EPSILON); // (2*1.0 + 1*0.5) / 4 * 100
     }
@@ -228,26 +228,26 @@ final class RatingServiceTest extends TestCase
         $summary = $this->service->getRatingSummary([]);
 
         $this->assertEquals(0, $summary['total_packages']);
-        $this->assertEquals(0, $summary['distribution']['green']);
-        $this->assertEqualsWithDelta(0.0, $summary['percentages']['green'], PHP_FLOAT_EPSILON);
+        $this->assertEquals(0, $summary['distribution']['current']);
+        $this->assertEqualsWithDelta(0.0, $summary['percentages']['current'], PHP_FLOAT_EPSILON);
         $this->assertFalse($summary['has_critical']);
         $this->assertEqualsWithDelta(0.0, $summary['health_score'], PHP_FLOAT_EPSILON);
     }
 
     public function testGetCategoryEmoji(): void
     {
-        $this->assertSame('🟢', $this->service->getCategoryEmoji('green'));
-        $this->assertSame('🟡', $this->service->getCategoryEmoji('yellow'));
-        $this->assertSame('🔴', $this->service->getCategoryEmoji('red'));
+        $this->assertSame('🟢', $this->service->getCategoryEmoji('current'));
+        $this->assertSame('🟡', $this->service->getCategoryEmoji('medium'));
+        $this->assertSame('🔴', $this->service->getCategoryEmoji('old'));
         $this->assertSame('⚪', $this->service->getCategoryEmoji('unknown'));
         $this->assertSame('❓', $this->service->getCategoryEmoji('invalid'));
     }
 
     public function testGetCategoryDescription(): void
     {
-        $this->assertSame('Current', $this->service->getCategoryDescription('green'));
-        $this->assertSame('Outdated', $this->service->getCategoryDescription('yellow'));
-        $this->assertSame('Critical', $this->service->getCategoryDescription('red'));
+        $this->assertSame('Current', $this->service->getCategoryDescription('current'));
+        $this->assertSame('Outdated', $this->service->getCategoryDescription('medium'));
+        $this->assertSame('Critical', $this->service->getCategoryDescription('old'));
         $this->assertSame('Unknown', $this->service->getCategoryDescription('unknown'));
         $this->assertSame('Unknown', $this->service->getCategoryDescription('invalid'));
     }
@@ -275,12 +275,12 @@ final class RatingServiceTest extends TestCase
 
         // Check basic rating
         $this->assertArrayHasKey('rating', $detailed);
-        $this->assertEquals('yellow', $detailed['rating']['category']);
+        $this->assertEquals('medium', $detailed['rating']['category']);
 
         // Check latest info
         $this->assertArrayHasKey('latest_info', $detailed);
         $this->assertEquals('1.5.0', $detailed['latest_info']['version']);
-        $this->assertEquals('green', $detailed['latest_info']['category']);
+        $this->assertEquals('current', $detailed['latest_info']['category']);
 
         // Check age reduction
         $this->assertArrayHasKey('age_reduction', $detailed);
@@ -291,7 +291,7 @@ final class RatingServiceTest extends TestCase
     public function testGetDetailedRatingWithoutLatestInfo(): void
     {
         $referenceDate = new DateTimeImmutable('2023-07-01');
-        $package = new Package('test/package', '1.0.0', false, new DateTimeImmutable('2023-05-01'));
+        $package = new Package('test/package', '1.0.0', false, true, new DateTimeImmutable('2023-05-01'));
 
         $detailed = $this->service->getDetailedRating($package, [], $referenceDate);
 
@@ -304,54 +304,54 @@ final class RatingServiceTest extends TestCase
     public function testValidateThresholds(): void
     {
         // Valid thresholds
-        $validThresholds = ['green' => 0.5, 'yellow' => 1.0];
+        $validThresholds = ['current' => 0.5, 'medium' => 1.0];
         $errors = $this->service->validateThresholds($validThresholds);
         $this->assertEmpty($errors);
 
-        // Missing green threshold
-        $missingGreen = ['yellow' => 1.0];
-        $errors = $this->service->validateThresholds($missingGreen);
-        $this->assertContains('Missing required threshold key: green', $errors);
+        // Missing current threshold
+        $missingAktuell = ['medium' => 1.0];
+        $errors = $this->service->validateThresholds($missingAktuell);
+        $this->assertContains('Missing required threshold key: current', $errors);
 
-        // Missing yellow threshold
-        $missingYellow = ['green' => 0.5];
-        $errors = $this->service->validateThresholds($missingYellow);
-        $this->assertContains('Missing required threshold key: yellow', $errors);
+        // Missing medium threshold
+        $missingMittel = ['current' => 0.5];
+        $errors = $this->service->validateThresholds($missingMittel);
+        $this->assertContains('Missing required threshold key: medium', $errors);
 
         // Negative values
-        $negativeThresholds = ['green' => -1, 'yellow' => 1.0];
+        $negativeThresholds = ['current' => -1, 'medium' => 1.0];
         $errors = $this->service->validateThresholds($negativeThresholds);
-        $this->assertContains("Threshold 'green' must be a positive number, got: integer", $errors);
+        $this->assertContains("Threshold 'current' must be a positive number, got: integer", $errors);
 
         // Non-numeric values
-        $nonNumericThresholds = ['green' => 'invalid', 'yellow' => 1.0];
+        $nonNumericThresholds = ['current' => 'invalid', 'medium' => 1.0];
         $errors = $this->service->validateThresholds($nonNumericThresholds);
-        $this->assertContains("Threshold 'green' must be a positive number, got: string", $errors);
+        $this->assertContains("Threshold 'current' must be a positive number, got: string", $errors);
 
         // Wrong order (green >= yellow)
-        $wrongOrderThresholds = ['green' => 2.0, 'yellow' => 1.0];
+        $wrongOrderThresholds = ['current' => 2.0, 'medium' => 1.0];
         $errors = $this->service->validateThresholds($wrongOrderThresholds);
-        $this->assertContains('Green threshold (2) must be less than yellow threshold (1)', $errors);
+        $this->assertContains('Current threshold (2) must be less than medium threshold (1)', $errors);
     }
 
     public function testConvertThresholdsToDays(): void
     {
-        $yearThresholds = ['green' => 0.5, 'yellow' => 1.0, 'red' => 2.0];
+        $yearThresholds = ['current' => 0.5, 'medium' => 1.0, 'old' => 2.0];
         $dayThresholds = $this->service->convertThresholdsToDays($yearThresholds);
 
-        $this->assertEquals(183, $dayThresholds['green']); // ~0.5 * 365.25
-        $this->assertEquals(365, $dayThresholds['yellow']); // ~1.0 * 365.25
-        $this->assertEquals(731, $dayThresholds['red']); // ~2.0 * 365.25
+        $this->assertEquals(183, $dayThresholds['current']); // ~0.5 * 365.25
+        $this->assertEquals(365, $dayThresholds['medium']); // ~1.0 * 365.25
+        $this->assertEquals(731, $dayThresholds['old']); // ~2.0 * 365.25
     }
 
     public function testRatingWithDevPackages(): void
     {
         $referenceDate = new DateTimeImmutable('2023-07-01');
-        $devPackage = new Package('test/dev-package', '1.0.0', true, new DateTimeImmutable('2023-05-01'));
+        $devPackage = new Package('test/dev-package', '1.0.0', true, true, new DateTimeImmutable('2023-05-01'));
 
         $rating = $this->service->ratePackage($devPackage, [], $referenceDate);
 
-        $this->assertEquals('green', $rating['category']);
+        $this->assertEquals('current', $rating['category']);
 
         $detailed = $this->service->getDetailedRating($devPackage, [], $referenceDate);
         $this->assertTrue($detailed['is_dev']);
@@ -365,7 +365,7 @@ final class RatingServiceTest extends TestCase
     {
         $referenceDate = new DateTimeImmutable('2023-07-01');
         $releaseDate = $referenceDate->modify("-{$ageDays} days");
-        $package = new Package('test/package', '1.0.0', false, $releaseDate);
+        $package = new Package('test/package', '1.0.0', false, true, $releaseDate);
 
         $rating = $this->service->ratePackage($package, $thresholds, $referenceDate);
 
@@ -378,19 +378,22 @@ final class RatingServiceTest extends TestCase
     public static function edgeCaseThresholdProvider(): Iterator
     {
         // Standard thresholds (183 days green, 365 days yellow)
-        yield [182, [], 'green'];
+        yield [182, [], 'current'];
         // Just under 6 months
-        yield [183, [], 'yellow'];
+        yield [183, [], 'medium'];
         // Exactly 6 months
-        yield [364, [], 'yellow'];
+        yield [364, [], 'medium'];
         // Just under 12 months
-        yield [365, [], 'red'];
+        yield [365, [], 'medium'];
         // Exactly 12 months
+        yield [366, [], 'old'];
+        // Over 12 months
         // Custom thresholds
-        yield [29, ['green' => 30, 'yellow' => 90], 'green'];
-        yield [30, ['green' => 30, 'yellow' => 90], 'yellow'];
-        yield [89, ['green' => 30, 'yellow' => 90], 'yellow'];
-        yield [90, ['green' => 30, 'yellow' => 90], 'red'];
+        yield [29, ['current' => 30, 'medium' => 90], 'current'];
+        yield [30, ['current' => 30, 'medium' => 90], 'current'];  // 30 <= 30 (current threshold)
+        yield [89, ['current' => 30, 'medium' => 90], 'medium'];
+        yield [90, ['current' => 30, 'medium' => 90], 'medium'];  // 90 <= 90 (medium threshold)
+        yield [91, ['current' => 30, 'medium' => 90], 'old'];     // 91 > 90 (medium threshold)
     }
 
     public function testHealthScoreCalculation(): void
@@ -399,8 +402,8 @@ final class RatingServiceTest extends TestCase
 
         // All green packages = 100% health score
         $allGreenPackages = [
-            new Package('green1/package', '1.0.0', false, new DateTimeImmutable('2023-05-01')),
-            new Package('green2/package', '1.0.0', false, new DateTimeImmutable('2023-04-01')),
+            new Package('green1/package', '1.0.0', false, true, new DateTimeImmutable('2023-05-01')),
+            new Package('green2/package', '1.0.0', false, true, new DateTimeImmutable('2023-04-01')),
         ];
 
         $summary = $this->service->getRatingSummary($allGreenPackages, [], $referenceDate);
@@ -408,8 +411,8 @@ final class RatingServiceTest extends TestCase
 
         // All red packages = 0% health score
         $allRedPackages = [
-            new Package('red1/package', '1.0.0', false, new DateTimeImmutable('2022-01-01')),
-            new Package('red2/package', '1.0.0', false, new DateTimeImmutable('2021-01-01')),
+            new Package('red1/package', '1.0.0', false, true, new DateTimeImmutable('2022-01-01')),
+            new Package('red2/package', '1.0.0', false, true, new DateTimeImmutable('2021-01-01')),
         ];
 
         $summary = $this->service->getRatingSummary($allRedPackages, [], $referenceDate);
@@ -417,8 +420,8 @@ final class RatingServiceTest extends TestCase
 
         // All yellow packages = 50% health score
         $allYellowPackages = [
-            new Package('yellow1/package', '1.0.0', false, new DateTimeImmutable('2022-12-01')),
-            new Package('yellow2/package', '1.0.0', false, new DateTimeImmutable('2022-11-01')),
+            new Package('yellow1/package', '1.0.0', false, true, new DateTimeImmutable('2022-12-01')),
+            new Package('yellow2/package', '1.0.0', false, true, new DateTimeImmutable('2022-11-01')),
         ];
 
         $summary = $this->service->getRatingSummary($allYellowPackages, [], $referenceDate);
@@ -429,8 +432,8 @@ final class RatingServiceTest extends TestCase
 
     public function testRatePackageWithInvalidThresholdsThrowsException(): void
     {
-        $package = new Package('test/package', '1.0.0', false, new DateTimeImmutable('2023-05-01'));
-        $invalidThresholds = ['green' => 2.0, 'yellow' => 1.0]; // Wrong order
+        $package = new Package('test/package', '1.0.0', false, true, new DateTimeImmutable('2023-05-01'));
+        $invalidThresholds = ['current' => 2.0, 'medium' => 1.0]; // Wrong order
 
         $this->expectException(ConfigurationException::class);
         $this->expectExceptionMessage('Invalid threshold configuration');
@@ -440,19 +443,19 @@ final class RatingServiceTest extends TestCase
 
     public function testRatePackageWithMissingThresholdKeysThrowsException(): void
     {
-        $package = new Package('test/package', '1.0.0', false, new DateTimeImmutable('2023-05-01'));
-        $invalidThresholds = ['green' => 0.5]; // Missing yellow
+        $package = new Package('test/package', '1.0.0', false, true, new DateTimeImmutable('2023-05-01'));
+        $invalidThresholds = ['current' => 0.5]; // Missing yellow
 
         $this->expectException(ConfigurationException::class);
-        $this->expectExceptionMessage('Missing required threshold key: yellow');
+        $this->expectExceptionMessage('Missing required threshold key: medium');
 
         $this->service->ratePackage($package, $invalidThresholds);
     }
 
     public function testRatePackageWithNegativeThresholdsThrowsException(): void
     {
-        $package = new Package('test/package', '1.0.0', false, new DateTimeImmutable('2023-05-01'));
-        $invalidThresholds = ['green' => -1, 'yellow' => 1.0];
+        $package = new Package('test/package', '1.0.0', false, true, new DateTimeImmutable('2023-05-01'));
+        $invalidThresholds = ['current' => -1, 'medium' => 1.0];
 
         $this->expectException(ConfigurationException::class);
         $this->expectExceptionMessage('must be a positive number');
@@ -462,8 +465,8 @@ final class RatingServiceTest extends TestCase
 
     public function testRatePackageWithNonNumericThresholdsThrowsException(): void
     {
-        $package = new Package('test/package', '1.0.0', false, new DateTimeImmutable('2023-05-01'));
-        $invalidThresholds = ['green' => 'invalid', 'yellow' => 1.0];
+        $package = new Package('test/package', '1.0.0', false, true, new DateTimeImmutable('2023-05-01'));
+        $invalidThresholds = ['current' => 'invalid', 'medium' => 1.0];
 
         $this->expectException(ConfigurationException::class);
         $this->expectExceptionMessage('must be a positive number');
@@ -501,7 +504,7 @@ final class RatingServiceTest extends TestCase
             ->willThrowException(new RuntimeException('Unexpected error'));
 
         $service = new RatingService($mockAgeService);
-        $package = new Package('test/package', '1.0.0', false, new DateTimeImmutable('2023-05-01'));
+        $package = new Package('test/package', '1.0.0', false, true, new DateTimeImmutable('2023-05-01'));
 
         $this->expectException(ServiceException::class);
         $this->expectExceptionMessage('Failed to rate package "test/package": Unexpected error');
@@ -532,7 +535,7 @@ final class RatingServiceTest extends TestCase
         $this->expectException(ServiceException::class);
         $this->expectExceptionMessage('Invalid package at index 1: expected Package instance, got object');
 
-        $this->service->getPackagesByRating($packages, 'green');
+        $this->service->getPackagesByRating($packages, 'current');
     }
 
     public function testHasCriticalPackagesWithInvalidPackagesThrowsException(): void
@@ -563,8 +566,8 @@ final class RatingServiceTest extends TestCase
 
     public function testGetDetailedRatingWithInvalidThresholdsThrowsException(): void
     {
-        $package = new Package('test/package', '1.0.0', false, new DateTimeImmutable('2023-05-01'));
-        $invalidThresholds = ['green' => 2.0, 'yellow' => 1.0]; // Wrong order
+        $package = new Package('test/package', '1.0.0', false, true, new DateTimeImmutable('2023-05-01'));
+        $invalidThresholds = ['current' => 2.0, 'medium' => 1.0]; // Wrong order
 
         $this->expectException(ConfigurationException::class);
         $this->expectExceptionMessage('Invalid threshold configuration');
@@ -574,12 +577,12 @@ final class RatingServiceTest extends TestCase
 
     public function testConvertThresholdsToDaysWithValidInput(): void
     {
-        $result = $this->service->convertThresholdsToDays(['green' => 0.5, 'yellow' => 1.0]);
+        $result = $this->service->convertThresholdsToDays(['current' => 0.5, 'medium' => 1.0]);
 
-        $this->assertArrayHasKey('green', $result);
-        $this->assertArrayHasKey('yellow', $result);
-        $this->assertIsInt($result['green']);
-        $this->assertIsInt($result['yellow']);
+        $this->assertArrayHasKey('current', $result);
+        $this->assertArrayHasKey('medium', $result);
+        $this->assertIsInt($result['current']);
+        $this->assertIsInt($result['medium']);
     }
 
     public function testErrorHandlingPreservesExceptionChain(): void
@@ -592,7 +595,7 @@ final class RatingServiceTest extends TestCase
             ->willThrowException($originalException);
 
         $service = new RatingService($mockAgeService);
-        $package = new Package('test/package', '1.0.0', false, new DateTimeImmutable('2023-05-01'));
+        $package = new Package('test/package', '1.0.0', false, true, new DateTimeImmutable('2023-05-01'));
 
         try {
             $service->ratePackage($package);
@@ -644,7 +647,7 @@ final class RatingServiceTest extends TestCase
             ->willThrowException(new RuntimeException('Mock error'));
 
         $service = new RatingService($mockAgeService);
-        $package = new Package('specific/package-name', '1.0.0', false, new DateTimeImmutable('2023-05-01'));
+        $package = new Package('specific/package-name', '1.0.0', false, true, new DateTimeImmutable('2023-05-01'));
 
         try {
             $service->ratePackage($package);

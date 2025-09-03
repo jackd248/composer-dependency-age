@@ -67,7 +67,7 @@ final class ConfigurationLoaderTest extends TestCase
         // Should use default values
         $this->assertSame('cli', $config->getOutputFormat());
         $this->assertTrue($config->shouldShowColors());
-        $this->assertFalse($config->shouldIncludeDev());
+        $this->assertTrue($config->shouldIncludeDev());
     }
 
     public function testLoadWithComposerExtra(): void
@@ -109,7 +109,7 @@ final class ConfigurationLoaderTest extends TestCase
             '--cache-ttl' => '7200',
             '--fail-on-critical' => true,
             '--ignore' => 'pkg1/test,pkg2/test',
-            '--thresholds' => 'green=0.25,yellow=0.75,red=1.5',
+            '--thresholds' => 'current=0.25,medium=0.75,old=1.5',
         ]);
 
         $config = $this->configurationLoader->load($this->composer, $input);
@@ -125,9 +125,9 @@ final class ConfigurationLoaderTest extends TestCase
         $this->assertTrue($config->shouldFailOnCritical());
         $this->assertContains('pkg1/test', $config->getIgnorePackages());
         $this->assertContains('pkg2/test', $config->getIgnorePackages());
-        $this->assertEqualsWithDelta(0.25, $config->getThresholds()['green'], PHP_FLOAT_EPSILON);
-        $this->assertEqualsWithDelta(0.75, $config->getThresholds()['yellow'], PHP_FLOAT_EPSILON);
-        $this->assertEqualsWithDelta(1.5, $config->getThresholds()['red'], PHP_FLOAT_EPSILON);
+        $this->assertEqualsWithDelta(0.25, $config->getThresholds()['current'], PHP_FLOAT_EPSILON);
+        $this->assertEqualsWithDelta(0.75, $config->getThresholds()['medium'], PHP_FLOAT_EPSILON);
+        $this->assertEqualsWithDelta(1.5, $config->getThresholds()['old'], PHP_FLOAT_EPSILON);
     }
 
     public function testLoadWithPartialThresholds(): void
@@ -136,15 +136,15 @@ final class ConfigurationLoaderTest extends TestCase
             ->willReturn([]);
 
         $input = $this->createInput([
-            '--thresholds' => 'yellow=1.5',
+            '--thresholds' => 'medium=1.5',
         ]);
 
         $config = $this->configurationLoader->load($this->composer, $input);
 
         // Should keep defaults for green and red, but yellow should be changed
-        $this->assertEqualsWithDelta(0.5, $config->getThresholds()['green'], PHP_FLOAT_EPSILON);
-        $this->assertEqualsWithDelta(1.5, $config->getThresholds()['yellow'], PHP_FLOAT_EPSILON);
-        $this->assertEqualsWithDelta(2.0, $config->getThresholds()['red'], PHP_FLOAT_EPSILON);
+        $this->assertEqualsWithDelta(0.5, $config->getThresholds()['current'], PHP_FLOAT_EPSILON);
+        $this->assertEqualsWithDelta(1.5, $config->getThresholds()['medium'], PHP_FLOAT_EPSILON);
+        $this->assertEqualsWithDelta(2.0, $config->getThresholds()['old'], PHP_FLOAT_EPSILON);
     }
 
     public function testLoadWithInvalidThresholdsString(): void
@@ -159,9 +159,9 @@ final class ConfigurationLoaderTest extends TestCase
         $config = $this->configurationLoader->load($this->composer, $input);
 
         // Should keep default thresholds when parsing fails
-        $this->assertEqualsWithDelta(0.5, $config->getThresholds()['green'], PHP_FLOAT_EPSILON);
-        $this->assertEqualsWithDelta(1.0, $config->getThresholds()['yellow'], PHP_FLOAT_EPSILON);
-        $this->assertEqualsWithDelta(2.0, $config->getThresholds()['red'], PHP_FLOAT_EPSILON);
+        $this->assertEqualsWithDelta(0.5, $config->getThresholds()['current'], PHP_FLOAT_EPSILON);
+        $this->assertEqualsWithDelta(1.0, $config->getThresholds()['medium'], PHP_FLOAT_EPSILON);
+        $this->assertEqualsWithDelta(2.0, $config->getThresholds()['old'], PHP_FLOAT_EPSILON);
     }
 
     public function testLoadWithConfigurationValidationError(): void

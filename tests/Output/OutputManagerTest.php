@@ -191,9 +191,9 @@ final class OutputManagerTest extends TestCase
     public function testFormatWithCustomThresholds(): void
     {
         $thresholds = [
-            'green' => 0.25,
-            'yellow' => 0.5,
-            'red' => 1.0,
+            'current' => 0.25,
+            'medium' => 0.5,
+            'old' => 1.0,
         ];
 
         $jsonOutput = $this->outputManager->format(

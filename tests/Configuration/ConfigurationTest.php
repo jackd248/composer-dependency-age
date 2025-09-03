@@ -36,11 +36,11 @@ final class ConfigurationTest extends TestCase
         $config = new Configuration();
 
         $this->assertContains('psr/log', $config->getIgnorePackages());
-        $this->assertEqualsWithDelta(0.5, $config->getThresholds()['green'], PHP_FLOAT_EPSILON);
-        $this->assertEqualsWithDelta(1.0, $config->getThresholds()['yellow'], PHP_FLOAT_EPSILON);
-        $this->assertEqualsWithDelta(2.0, $config->getThresholds()['red'], PHP_FLOAT_EPSILON);
+        $this->assertEqualsWithDelta(0.5, $config->getThresholds()['current'], PHP_FLOAT_EPSILON);
+        $this->assertEqualsWithDelta(1.0, $config->getThresholds()['medium'], PHP_FLOAT_EPSILON);
+        $this->assertEqualsWithDelta(2.0, $config->getThresholds()['old'], PHP_FLOAT_EPSILON);
         $this->assertSame('.dependency-age.cache', $config->getCacheFile());
-        $this->assertFalse($config->shouldIncludeDev());
+        $this->assertTrue($config->shouldIncludeDev());
         $this->assertSame('cli', $config->getOutputFormat());
         $this->assertTrue($config->shouldShowColors());
         $this->assertSame(30, $config->getApiTimeout());
@@ -55,7 +55,7 @@ final class ConfigurationTest extends TestCase
     {
         $config = new Configuration(
             ignorePackages: ['custom/package'],
-            thresholds: ['green' => 0.25, 'yellow' => 0.5, 'red' => 1.0],
+            thresholds: ['current' => 0.25, 'medium' => 0.5, 'old' => 1.0],
             cacheFile: 'custom-cache.json',
             includeDev: true,
             outputFormat: 'json',
@@ -69,7 +69,7 @@ final class ConfigurationTest extends TestCase
         );
 
         $this->assertSame(['custom/package'], $config->getIgnorePackages());
-        $this->assertSame(['green' => 0.25, 'yellow' => 0.5, 'red' => 1.0], $config->getThresholds());
+        $this->assertSame(['current' => 0.25, 'medium' => 0.5, 'old' => 1.0], $config->getThresholds());
         $this->assertSame('custom-cache.json', $config->getCacheFile());
         $this->assertTrue($config->shouldIncludeDev());
         $this->assertSame('json', $config->getOutputFormat());
@@ -87,7 +87,7 @@ final class ConfigurationTest extends TestCase
         $extra = [
             'dependency-age' => [
                 'ignore' => ['test/package'],
-                'thresholds' => ['green' => 0.3],
+                'thresholds' => ['current' => 0.3],
                 'cache_file' => 'test-cache',
                 'include_dev' => true,
                 'api_timeout' => 45,
@@ -98,8 +98,8 @@ final class ConfigurationTest extends TestCase
 
         $this->assertContains('psr/log', $config->getIgnorePackages()); // Default
         $this->assertContains('test/package', $config->getIgnorePackages()); // Added
-        $this->assertEqualsWithDelta(0.3, $config->getThresholds()['green'], PHP_FLOAT_EPSILON); // Overridden
-        $this->assertEqualsWithDelta(1.0, $config->getThresholds()['yellow'], PHP_FLOAT_EPSILON); // Default
+        $this->assertEqualsWithDelta(0.3, $config->getThresholds()['current'], PHP_FLOAT_EPSILON); // Overridden
+        $this->assertEqualsWithDelta(1.0, $config->getThresholds()['medium'], PHP_FLOAT_EPSILON); // Default
         $this->assertSame('test-cache', $config->getCacheFile());
         $this->assertTrue($config->shouldIncludeDev());
         $this->assertSame(45, $config->getApiTimeout());
@@ -112,7 +112,7 @@ final class ConfigurationTest extends TestCase
         // Should use all defaults
         $this->assertContains('psr/log', $config->getIgnorePackages());
         $this->assertSame('.dependency-age.cache', $config->getCacheFile());
-        $this->assertFalse($config->shouldIncludeDev());
+        $this->assertTrue($config->shouldIncludeDev());
     }
 
     public function testWithOverrides(): void
@@ -156,29 +156,29 @@ final class ConfigurationTest extends TestCase
     {
         $config = new Configuration(thresholds: [
             'invalid' => 0.5,
-            'green' => -1.0,
-            'yellow' => 'not-numeric',
+            'current' => -1.0,
+            'medium' => 'not-numeric',
         ]);
 
         $errors = $config->validate();
 
         $this->assertContains('Invalid threshold key: invalid', $errors);
-        $this->assertContains('Threshold green must be a positive number, got: -1', $errors);
-        $this->assertContains('Threshold yellow must be a positive number, got: not-numeric', $errors);
+        $this->assertContains('Threshold current must be a positive number, got: -1', $errors);
+        $this->assertContains('Threshold medium must be a positive number, got: not-numeric', $errors);
     }
 
     public function testValidateThresholdOrder(): void
     {
         $config = new Configuration(thresholds: [
-            'green' => 2.0,
-            'yellow' => 1.0,
-            'red' => 0.5,
+            'current' => 2.0,
+            'medium' => 1.0,
+            'old' => 0.5,
         ]);
 
         $errors = $config->validate();
 
-        $this->assertContains('Green threshold must be less than yellow threshold', $errors);
-        $this->assertContains('Yellow threshold must be less than red threshold', $errors);
+        $this->assertContains('Current threshold must be less than medium threshold', $errors);
+        $this->assertContains('Medium threshold must be less than old threshold', $errors);
     }
 
     public function testValidateInvalidOutputFormat(): void

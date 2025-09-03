@@ -73,7 +73,7 @@ final class ColorFormatterTest extends TestCase
     public function testColorFormattingWithColorsDisabled(): void
     {
         $this->formatter->setColorsEnabled(false);
-        $result = $this->formatter->color('test', 'red');
+        $result = $this->formatter->color('test', 'old');
 
         $this->assertSame('test', $result);
         $this->assertStringNotContainsString("\033[", $result);
@@ -149,7 +149,7 @@ final class ColorFormatterTest extends TestCase
     public function testMultipleFormatsWithColorsDisabled(): void
     {
         $this->formatter->setColorsEnabled(false);
-        $result = $this->formatter->format('test', ['red', 'bold']);
+        $result = $this->formatter->format('test', ['old', 'bold']);
 
         $this->assertSame('test', $result);
     }
@@ -185,9 +185,9 @@ final class ColorFormatterTest extends TestCase
 
     public static function ratingCategoryProvider(): Iterator
     {
-        yield 'green' => ['green', '92'];
-        yield 'yellow' => ['yellow', '93'];
-        yield 'red' => ['red', '91'];
+        yield 'current' => ['current', '92'];
+        yield 'medium' => ['medium', '93'];
+        yield 'old' => ['old', '91'];
         yield 'unknown' => ['unknown', '37'];
         yield 'invalid' => ['invalid', ''];
     }
@@ -195,7 +195,7 @@ final class ColorFormatterTest extends TestCase
     public function testFormatRatingWithColorsDisabled(): void
     {
         $this->formatter->setColorsEnabled(false);
-        $result = $this->formatter->formatRating('test', 'green');
+        $result = $this->formatter->formatRating('test', 'current');
 
         $this->assertSame('test', $result);
     }

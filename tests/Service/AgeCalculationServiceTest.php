@@ -252,35 +252,35 @@ final class AgeCalculationServiceTest extends TestCase
 
     public static function ageCategoryProvider(): Iterator
     {
-        yield [0, 'green'];
-        yield [30, 'green'];
+        yield [0, 'current'];
+        yield [30, 'current'];
         // 1 month
-        yield [90, 'green'];
+        yield [90, 'current'];
         // 3 months
-        yield [182, 'green'];
+        yield [182, 'current'];
         // Just under 6 months
-        yield [183, 'yellow'];
+        yield [183, 'medium'];
         // 6 months
-        yield [200, 'yellow'];
+        yield [200, 'medium'];
         // 6+ months
-        yield [364, 'yellow'];
+        yield [364, 'medium'];
         // Just under 12 months
-        yield [365, 'red'];
+        yield [365, 'medium'];
         // 12 months
-        yield [500, 'red'];
+        yield [500, 'old'];
     }
 
     public function testGetAgeCategoryWithCustomThresholds(): void
     {
         $customThresholds = [
-            'green' => 30, // 30 days
-            'yellow' => 90, // 90 days
+            'current' => 30, // 30 days
+            'medium' => 90, // 90 days
         ];
 
-        $this->assertSame('green', $this->service->getAgeCategory(29, $customThresholds));
-        $this->assertSame('yellow', $this->service->getAgeCategory(30, $customThresholds));
-        $this->assertSame('yellow', $this->service->getAgeCategory(89, $customThresholds));
-        $this->assertSame('red', $this->service->getAgeCategory(90, $customThresholds));
+        $this->assertSame('current', $this->service->getAgeCategory(29, $customThresholds));
+        $this->assertSame('current', $this->service->getAgeCategory(30, $customThresholds));  // 30 <= 30
+        $this->assertSame('medium', $this->service->getAgeCategory(89, $customThresholds));
+        $this->assertSame('medium', $this->service->getAgeCategory(90, $customThresholds));   // 90 <= 90
     }
 
     public function testCalculateStatisticsWithPackages(): void
