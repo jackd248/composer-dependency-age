@@ -250,11 +250,11 @@ class RatingService
 
         // Overall rating logic (same as TableRenderer)
         if ($currentPercent >= 70) {
-            return '✓ mostly current';
+            return '<fg=green>✓</fg=green> mostly current';
         } elseif ($oldPercent >= 30) {
-            return '! needs attention';
+            return '<fg=red>!</fg=red> needs attention';
         } else {
-            return '~ moderately current';
+            return '<fg=yellow>~</fg=yellow> moderately current';
         }
     }
 

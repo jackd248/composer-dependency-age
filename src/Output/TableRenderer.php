@@ -359,7 +359,7 @@ class TableRenderer
     private function renderLegend(OutputInterface $output): void
     {
         $output->writeln('Legend:');
-        $output->writeln('- Rating: ✓ mostly current, ~ moderately current, ! chronologically old, ? unknown');
+        $output->writeln('- Rating: <fg=green>✓</fg=green> mostly current, <fg=yellow>~</fg=yellow> moderately current, <fg=red>!</fg=red> chronologically old, <fg=gray>?</fg=gray> unknown');
         $output->writeln('- Type: → direct dependency, ~ indirect dependency, * dev dependency');
         $output->writeln('');
     }
@@ -427,7 +427,7 @@ class TableRenderer
         $medium = $counts['medium'];
         $old = $counts['old'];
 
-        return sprintf('%d Packages (%d ✓, %d ~, %d !)', $total, $current, $medium, $old);
+        return sprintf('%d Packages (%d <fg=green>✓</fg=green>, %d <fg=yellow>~</fg=yellow>, %d <fg=red>!</fg=red>)', $total, $current, $medium, $old);
     }
 
     /**
@@ -439,11 +439,11 @@ class TableRenderer
     private function getOverallRating(array $packages, array $thresholds = [], ?DateTimeImmutable $referenceDate = null): string
     {
         if (empty($packages)) {
-            return '? unknown';
+            return '<fg=gray>?</fg=gray> unknown';
         }
 
         $summary = $this->ratingService->getRatingSummary($packages, $thresholds, $referenceDate);
 
-        return $summary['overall_rating'] ?? '? unknown';
+        return $summary['overall_rating'] ?? '<fg=gray>?</fg=gray> unknown';
     }
 }
