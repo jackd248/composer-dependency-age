@@ -11,6 +11,14 @@
 
 A Composer plugin that analyzes the age of your project dependencies and provides neutral categorization to help you understand your dependency landscape. No risk assessment - just clear, objective information about when your dependencies were last released.
 
+> [!warning]
+> This package is in early development stage and may change significantly in the future. I am working steadily to release a stable version as soon as possible.
+
+> [!note]
+> Understanding the age of your dependencies is crucial for maintaining a healthy codebase.
+> While newer isn't always better, knowing when your dependencies were last updated helps you make informed decisions about maintenance, security planning, and technical debt management.
+> This tool provides objective age categorization without making assumptions about what you should do - empowering you to prioritize updates based on your project's specific needs, risk tolerance and maintenance windows.
+
 ## ✨ Features
 
 - **Neutral Age Analysis** - Categorizes dependencies as Current, Medium, or Old based on release dates
@@ -97,15 +105,10 @@ Dependency age ~ // 21.9 years in total (9 months average per package). Use comp
 The overall rating in the summary is calculated based on the distribution of your dependencies:
 
 | Rating | Symbol | Logic | Description |
-|--------|--------|-------|-------------|
-| **Mostly Current** | ✅ | ≥ 70% Current packages | Your project uses predominantly recent dependencies |
-| **Needs Attention** | 🔴 | ≥ 30% Old packages | Significant portion of dependencies are outdated |
-| **Moderately Current** | 🟡 | All other cases | Balanced mix of current and older dependencies |
-
-**Examples:**
-- 80% Current, 15% Medium, 5% Old → ✅ **Mostly Current**
-- 60% Current, 30% Medium, 10% Old → 🟡 **Moderately Current**
-- 50% Current, 20% Medium, 30% Old → 🔴 **Needs Attention**
+|--------|-------|-------|-------------|
+| **Mostly Current** | ✓ | ≥ 70% Current packages | Your project uses predominantly recent dependencies |
+| **Needs Attention** | ! | ≥ 30% Old packages | Significant portion of dependencies are outdated |
+| **Moderately Current** | ~️ | All other cases | Balanced mix of current and older dependencies |
 
 ## 🧑‍💻 Contributing
 
