@@ -186,11 +186,11 @@ final class JsonFormatter
         $ageInYears = $ageInDays / 365.25;
 
         if ($ageInYears < 0.5) {
-            return 'green';
+            return 'current';
         } elseif ($ageInYears < 1.0) {
-            return 'yellow';
+            return 'medium';
         }
 
-        return 'red';
+        return 'old';
     }
 }

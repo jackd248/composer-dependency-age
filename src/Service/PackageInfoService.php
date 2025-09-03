@@ -51,12 +51,18 @@ class PackageInfoService
     {
         $packages = [];
         $installedRepository = $composer->getRepositoryManager()->getLocalRepository();
+        $dependencyInfo = $this->getDependencyInfo($composer);
 
         foreach ($installedRepository->getPackages() as $composerPackage) {
+            $packageName = $composerPackage->getName();
+            $isDirect = isset($dependencyInfo['direct'][$packageName]) || isset($dependencyInfo['dev'][$packageName]);
+            $isDev = isset($dependencyInfo['dev'][$packageName]);
+
             $packages[] = new Package(
-                $composerPackage->getName(),
+                $packageName,
                 $composerPackage->getPrettyVersion(),
-                $composerPackage->isDev(),
+                $isDev,
+                $isDirect,
             );
         }
 
@@ -476,5 +482,34 @@ class PackageInfoService
         }
 
         return $cacheData;
+    }
+
+    /**
+     * Get dependency information from composer.json.
+     *
+     * @return array{direct: array<string, true>, dev: array<string, true>}
+     */
+    private function getDependencyInfo(Composer $composer): array
+    {
+        $composerConfig = $composer->getPackage();
+        $directDependencies = [];
+        $devDependencies = [];
+
+        // Get production dependencies
+        $requires = $composerConfig->getRequires();
+        foreach ($requires as $packageName => $constraint) {
+            $directDependencies[$packageName] = true;
+        }
+
+        // Get development dependencies
+        $devRequires = $composerConfig->getDevRequires();
+        foreach ($devRequires as $packageName => $constraint) {
+            $devDependencies[$packageName] = true;
+        }
+
+        return [
+            'direct' => $directDependencies,
+            'dev' => $devDependencies,
+        ];
     }
 }

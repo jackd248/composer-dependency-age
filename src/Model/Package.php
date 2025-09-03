@@ -34,6 +34,7 @@ final readonly class Package
         public string $name,
         public string $version,
         public bool $isDev = false,
+        public bool $isDirect = false,
         public ?DateTimeImmutable $releaseDate = null,
         public ?string $latestVersion = null,
         public ?DateTimeImmutable $latestReleaseDate = null,
@@ -45,6 +46,7 @@ final readonly class Package
             name: $this->name,
             version: $this->version,
             isDev: $this->isDev,
+            isDirect: $this->isDirect,
             releaseDate: $releaseDate,
             latestVersion: $this->latestVersion,
             latestReleaseDate: $this->latestReleaseDate,
@@ -57,6 +59,7 @@ final readonly class Package
             name: $this->name,
             version: $this->version,
             isDev: $this->isDev,
+            isDirect: $this->isDirect,
             releaseDate: $this->releaseDate,
             latestVersion: $latestVersion,
             latestReleaseDate: $latestReleaseDate,
@@ -78,5 +81,20 @@ final readonly class Package
     public function isProduction(): bool
     {
         return !$this->isDev;
+    }
+
+    public function getDependencyType(): string
+    {
+        if ($this->isDev && !$this->isDirect) {
+            return '<fg=magenta>*</fg=magenta><fg=white>~</fg=white>';
+        }
+        if ($this->isDev) {
+            return '<fg=magenta>*</fg=magenta>';
+        }
+        if ($this->isDirect) {
+            return '<fg=cyan>→</fg=cyan>';
+        }
+
+        return '<fg=white>~</fg=white>';
     }
 }

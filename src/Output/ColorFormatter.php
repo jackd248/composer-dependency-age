@@ -192,9 +192,9 @@ class ColorFormatter
         }
 
         return match ($category) {
-            'green' => $this->color($text, 'bright_green'),
-            'yellow' => $this->color($text, 'bright_yellow'),
-            'red' => $this->color($text, 'bright_red'),
+            'current' => $this->color($text, 'bright_green'),
+            'medium' => $this->color($text, 'bright_yellow'),
+            'old' => $this->color($text, 'bright_red'),
             'unknown' => $this->color($text, 'white'),
             default => $text,
         };

@@ -63,9 +63,6 @@ final class ComposerEventHandler
             return;
         }
 
-        $this->io->write('');
-        $this->io->write('📊 <info>Analyzing dependency ages...</info>');
-
         try {
             $summary = $this->performQuickAnalysis();
             $this->displaySummary($summary, $operation);
@@ -130,14 +127,12 @@ final class ComposerEventHandler
 
         // Get rating summary
         $ratingSummary = $ratingService->getRatingSummary($quickEnrichedPackages, $this->config->getThresholds());
-        
+
         // Get age statistics
         $ageStats = $ageCalculationService->calculateStatistics($quickEnrichedPackages);
-        
-        // Merge summaries
-        $summary = array_merge($ratingSummary, $ageStats);
 
-        return $summary;
+        // Merge summaries
+        return array_merge($ratingSummary, $ageStats);
     }
 
     /**
@@ -163,8 +158,8 @@ final class ComposerEventHandler
             }
         }
 
-        // Limit API calls for performance (max 10 packages per event)
-        $packagesToEnrich = array_slice($packagesToEnrich, 0, 10);
+        // For event hooks, enrich all packages to get accurate totals
+        // Note: This may make the event slower but ensures consistent results
 
         // Second pass: Enrich remaining packages
         if (!empty($packagesToEnrich)) {
@@ -183,8 +178,9 @@ final class ComposerEventHandler
     private function displaySummary(array $summary, string $operation): void
     {
         $totalPackages = $summary['total_packages'];
-        $hasCritical = $summary['has_critical'] ?? false;
-        $criticalCount = $summary['critical_count'] ?? 0;
+        $dominantCategory = $summary['dominant_category'] ?? 'unknown';
+        $dominantCount = $summary['dominant_count'] ?? 0;
+        $dominantPercentage = $summary['dominant_percentage'] ?? 0;
 
         if (0 === $totalPackages) {
             $this->io->write('<comment>No packages to analyze.</comment>');
@@ -196,14 +192,33 @@ final class ComposerEventHandler
         $totalAgeInYears = $this->calculateTotalAgeInYears($summary);
         $averageAgeFormatted = $summary['average_age_formatted'] ?? '0 days';
 
-        // Main summary line as specified in requirements
+        // Use unified overall rating
+        $overallRating = $summary['overall_rating'] ?? '?';
+        $ratingSymbol = $this->getRatingSymbol($overallRating);
+
+        // Simplified summary format
         $this->io->write(sprintf(
-            '✱ Your dependencies age is <info>%s</info> (average is %s per package)',
+            '<fg=green>Dependency age</> %s // <options=bold>%s</> in total (%s average per package). Use <fg=cyan>composer dependency-age</fg=cyan> for full details.',
+            $ratingSymbol,
             $this->formatTotalAge($totalAgeInYears),
             $averageAgeFormatted,
         ));
+    }
 
-        $this->io->write('Run `composer dependency-age` for detailed analysis and recommendations.');
+    /**
+     * Get rating symbol from overall rating string.
+     */
+    private function getRatingSymbol(string $overallRating): string
+    {
+        if (str_contains($overallRating, '✓')) {
+            return '<fg=green>✓</fg=green>';
+        } elseif (str_contains($overallRating, '~')) {
+            return '<fg=yellow>~</fg=yellow>';
+        } elseif (str_contains($overallRating, '!')) {
+            return '<fg=red>!</fg=red>';
+        } else {
+            return '<fg=gray>?</fg=gray>';
+        }
     }
 
     /**
@@ -275,6 +290,6 @@ final class ComposerEventHandler
             return sprintf('%.1f months', $months);
         }
 
-        return sprintf('**%.1f years**', $totalAgeInYears);
+        return sprintf('%.1f years', $totalAgeInYears);
     }
 }

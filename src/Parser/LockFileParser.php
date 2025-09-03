@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace KonradMichalik\ComposerDependencyAge\Parser;
 
+use JsonException;
 use KonradMichalik\ComposerDependencyAge\Exception\LockFileException;
 use KonradMichalik\ComposerDependencyAge\Model\Package;
 
@@ -57,7 +58,12 @@ final class LockFileParser
      */
     public function parseContent(string $lockFileContent): array
     {
-        $data = json_decode($lockFileContent, true);
+        try {
+            $data = json_decode($lockFileContent, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            throw new LockFileException('Invalid JSON in lock file: '.$e->getMessage(), 0, $e);
+        }
+
         if (null === $data) {
             throw new LockFileException('Invalid JSON in lock file');
         }
@@ -90,7 +96,12 @@ final class LockFileParser
      */
     public function parseProductionOnly(string $lockFileContent): array
     {
-        $data = json_decode($lockFileContent, true);
+        try {
+            $data = json_decode($lockFileContent, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            throw new LockFileException('Invalid JSON in lock file: '.$e->getMessage(), 0, $e);
+        }
+
         if (null === $data) {
             throw new LockFileException('Invalid JSON in lock file');
         }

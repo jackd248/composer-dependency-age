@@ -142,8 +142,8 @@ class AgeCalculationService
     {
         // Default thresholds in days (6 months, 12 months)
         $defaultThresholds = [
-            'green' => 182,  // 0.5 years = ~182 days
-            'yellow' => 365, // 1.0 year = 365 days
+            'current' => 182,  // 0.5 years = ~182 days
+            'medium' => 365,   // 1.0 year = 365 days
         ];
 
         // Convert thresholds from years to days if they appear to be in years (< 10)
@@ -158,15 +158,15 @@ class AgeCalculationService
 
         $thresholds = array_merge($defaultThresholds, $convertedThresholds);
 
-        if ($ageInDays <= $thresholds['green']) {
-            return 'green';
+        if ($ageInDays <= $thresholds['current']) {
+            return 'current';
         }
 
-        if ($ageInDays <= $thresholds['yellow']) {
-            return 'yellow';
+        if ($ageInDays <= $thresholds['medium']) {
+            return 'medium';
         }
 
-        return 'red';
+        return 'old';
     }
 
     /**

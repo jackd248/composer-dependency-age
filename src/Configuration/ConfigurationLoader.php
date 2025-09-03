@@ -145,7 +145,7 @@ final class ConfigurationLoader
     {
         $thresholds = $defaultThresholds;
 
-        // Parse format: "green=0.5,yellow=1.0,red=2.0"
+        // Parse format: "current=0.5,medium=1.0,old=2.0"
         $parts = explode(',', $thresholdString);
 
         foreach ($parts as $part) {
@@ -158,7 +158,7 @@ final class ConfigurationLoader
             $key = trim($key);
             $value = trim($value);
 
-            if (in_array($key, ['green', 'yellow', 'red'], true) && is_numeric($value)) {
+            if (in_array($key, ['current', 'medium', 'old'], true) && is_numeric($value)) {
                 $thresholds[$key] = (float) $value;
             }
         }

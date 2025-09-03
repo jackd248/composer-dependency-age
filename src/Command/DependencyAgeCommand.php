@@ -48,10 +48,88 @@ final class DependencyAgeCommand extends BaseCommand
     {
         $this
             ->setName('dependency-age')
-            ->setDescription('Analyze the age of your project dependencies')
+            ->setDescription('Analyze the age categories of your project dependencies')
             ->setHelp(
-                'This command analyzes the age of all dependencies in your project and '.
-                'provides insights about outdated packages.',
+                <<<'HELP'
+The <info>dependency-age</info> command analyzes the age of all dependencies in your project
+and categorizes them based on their release dates. This provides neutral age categorization
+without risk assessment to help you understand your dependency landscape.
+
+<comment>Syntax:</comment>
+<info>composer dependency-age [options]</info>
+
+<comment>Examples:</comment>
+<info>composer dependency-age</info>                           Basic analysis with table output
+<info>composer dependency-age --format json</info>            JSON output for CI integration
+<info>composer dependency-age --direct</info>                 Analyze only direct dependencies
+<info>composer dependency-age --no-dev</info>                 Exclude development dependencies
+<info>composer dependency-age --format github</info>          GitHub-formatted output for PRs
+
+<comment>Age Categories:</comment>
+• <fg=green>Current</fg=green>  - Dependencies released within 6 months (≤ 0.5 years)
+• <fg=yellow>Medium</fg=yellow>   - Dependencies released within 12 months (≤ 1.0 year)
+• <fg=red>Old</fg=red>      - Dependencies older than 12 months (> 1.0 year)
+• <fg=gray>Unknown</fg=gray>  - Dependencies without release date information
+
+<comment>Output Formats:</comment>
+• <info>cli</info>     - Human-readable table with colors and summary (default)
+• <info>json</info>    - Machine-readable JSON format for automation
+• <info>github</info>  - Markdown format optimized for GitHub PRs/Issues
+
+<comment>Configuration:</comment>
+Configuration can be set via:
+• Command line options (highest priority)
+• composer.json "extra" section
+• Environment variables
+• Default values
+
+Example composer.json configuration:
+<info>{
+  "extra": {
+    "dependency-age": {
+      "thresholds": {"current": 0.5, "medium": 1.0, "old": 2.0},
+      "ignore": ["psr/log", "psr/container"],
+      "output_format": "cli",
+      "include_dev": false,
+      "cache_ttl": 86400
+    }
+  }
+}</info>
+
+<comment>Cache Management:</comment>
+The plugin caches Packagist API responses to improve performance:
+• Default cache file: <info>.dependency-age.cache</info>
+• Cache TTL: 24 hours (configurable)
+• Use <info>--no-cache</info> to disable caching
+• Use <info>--offline</info> for offline mode (cache-only)
+
+<comment>Filtering Options:</comment>
+• <info>--direct</info>     Show only direct dependencies (not transitive)
+• <info>--no-dev</info>     Exclude development dependencies
+• <info>--ignore</info>     Additional packages to ignore (comma-separated)
+
+<comment>Display Options:</comment>
+• <info>--no-colors</info>   Disable color output
+• <info>--format</info>      Output format: cli, json, github (default: cli)
+• <info>--thresholds</info>  Custom age thresholds in years
+
+<comment>Performance Options:</comment>
+• <info>--api-timeout</info>      API request timeout (default: 30 seconds)
+• <info>--cache-ttl</info>        Cache lifetime in seconds (default: 86400)
+• <info>--cache-file</info>       Custom cache file path (default: .dependency-age.cache)
+
+<comment>Integration:</comment>
+The plugin can be used in CI/CD pipelines:
+• Exit code 0: Analysis completed successfully
+• Exit code 1: Configuration or execution errors
+• Use JSON format for automated processing
+• GitHub format for pull request comments
+
+<comment>Notes:</comment>
+This tool provides neutral age analysis only. It does not assess security
+risks, compatibility issues, or update recommendations. Use the information
+to understand your dependency landscape and make informed decisions.
+HELP
             )
             ->addOption(
                 'format',
@@ -94,7 +172,7 @@ final class DependencyAgeCommand extends BaseCommand
                 'thresholds',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'Age thresholds in format "green=0.5,yellow=1.0,red=2.0" (years)',
+                'Age thresholds in format "current=0.5,medium=1.0,old=2.0" (years)',
             )
             ->addOption(
                 'cache-file',
@@ -115,10 +193,10 @@ final class DependencyAgeCommand extends BaseCommand
                 'Cache TTL in seconds',
             )
             ->addOption(
-                'fail-on-critical',
+                'direct',
                 null,
                 InputOption::VALUE_NONE,
-                'Exit with code 2 if critical dependencies found',
+                'Show only direct dependencies (exclude transitive dependencies)',
             );
     }
 
@@ -128,7 +206,7 @@ final class DependencyAgeCommand extends BaseCommand
         $this->displayHeader($output);
 
         $output->writeln('');
-        $output->writeln('<comment>Analyzing dependency ages...</comment>');
+        $output->writeln('<fg=gray>Analyzing dependency ages...</>');
 
         try {
             $composer = $this->requireComposer();
@@ -195,14 +273,23 @@ final class DependencyAgeCommand extends BaseCommand
             $packages = $packageInfoService->getInstalledPackages($composer);
 
             // Filter ignored packages and dev packages if needed
-            $filteredPackages = array_filter($packages, function ($package) use ($config) {
+            $filteredPackages = array_filter($packages, function ($package) use ($config, $input) {
                 // Skip dev packages if not included
                 if (!$config->shouldIncludeDev() && $package->isDev) {
                     return false;
                 }
 
                 // Skip ignored packages
-                return !$config->isPackageIgnored($package->name);
+                if ($config->isPackageIgnored($package->name)) {
+                    return false;
+                }
+
+                // Filter for direct dependencies only if --direct option is used
+                if ($input->getOption('direct') && !$package->isDirect) {
+                    return false;
+                }
+
+                return true;
             });
 
             if (empty($filteredPackages)) {
@@ -225,20 +312,13 @@ final class DependencyAgeCommand extends BaseCommand
             if ('cli' === $format) {
                 $outputManager->renderCliTable($enrichedPackages, $output, [
                     'show_colors' => $showColors,
+                    'direct_mode_active' => $input->getOption('direct'),
                 ], $thresholds);
             } else {
                 $formattedOutput = $outputManager->format($format, $enrichedPackages, [
                     'show_colors' => $showColors,
                 ], $thresholds);
                 $output->write($formattedOutput);
-            }
-
-            // Check if we should fail on critical dependencies
-            if ($config->shouldFailOnCritical()) {
-                $summary = $ratingService->getRatingSummary($enrichedPackages, $thresholds);
-                if ($summary['has_critical']) {
-                    return 2; // Exit code 2 for critical dependencies
-                }
             }
 
             return self::SUCCESS;
@@ -257,11 +337,12 @@ final class DependencyAgeCommand extends BaseCommand
      */
     private function displayHeader(OutputInterface $output): void
     {
-        $output->writeln('<info>Composer Dependency Age</info>');
-        $output->writeln('<info>==============================</info>');
         $output->writeln('');
-        $output->writeln(' A Composer plugin that analyzes the age of your project dependencies.');
+        $output->writeln('<comment>Composer Dependency Age</comment>');
+        $output->writeln('<comment>===================================</comment>');
         $output->writeln('');
-        $output->writeln(' For more information and usage examples, run: `composer dependency-age --help`');
+        $output->writeln(' A Composer plugin for neutral analysis of your project dependencies\' age.');
+        $output->writeln('');
+        $output->writeln(' For more information: <fg=cyan>composer dependency-age --verbose</>');
     }
 }

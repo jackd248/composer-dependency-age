@@ -28,7 +28,7 @@ namespace KonradMichalik\ComposerDependencyAge\Configuration;
  */
 final class Configuration
 {
-    private const DEFAULT_IGNORE_PACKAGES = [
+    public const DEFAULT_IGNORE_PACKAGES = [
         'psr/log',
         'psr/container',
         'psr/http-message',
@@ -43,9 +43,9 @@ final class Configuration
     ];
 
     private const DEFAULT_THRESHOLDS = [
-        'green' => 0.5,   // 6 months
-        'yellow' => 1.0,  // 12 months
-        'red' => 2.0,     // 24 months
+        'current' => 0.5,  // 6 months
+        'medium' => 1.0,   // 12 months
+        'old' => 2.0,      // 24 months
     ];
 
     /**
@@ -57,7 +57,7 @@ final class Configuration
         private readonly array $ignorePackages = self::DEFAULT_IGNORE_PACKAGES,
         private array $thresholds = self::DEFAULT_THRESHOLDS,
         private readonly string $cacheFile = '.dependency-age.cache',
-        private readonly bool $includeDev = false,
+        private readonly bool $includeDev = true,
         private readonly string $outputFormat = 'cli',
         private readonly bool $showColors = true,
         private readonly int $apiTimeout = 30,
@@ -90,7 +90,7 @@ final class Configuration
                 $config['thresholds'] ?? [],
             ),
             cacheFile: $config['cache_file'] ?? '.dependency-age.cache',
-            includeDev: $config['include_dev'] ?? false,
+            includeDev: $config['include_dev'] ?? true,
             outputFormat: $config['output_format'] ?? 'cli',
             showColors: $config['show_colors'] ?? true,
             apiTimeout: $config['api_timeout'] ?? 30,
@@ -231,7 +231,7 @@ final class Configuration
 
         // Validate thresholds
         foreach ($this->thresholds as $key => $value) {
-            if (!in_array($key, ['green', 'yellow', 'red'], true)) {
+            if (!in_array($key, ['current', 'medium', 'old'], true)) {
                 $errors[] = "Invalid threshold key: {$key}";
             }
             if (!is_numeric($value) || $value < 0) {
@@ -240,12 +240,12 @@ final class Configuration
         }
 
         // Validate threshold order
-        if (isset($this->thresholds['green'], $this->thresholds['yellow'], $this->thresholds['red'])) {
-            if ($this->thresholds['green'] >= $this->thresholds['yellow']) {
-                $errors[] = 'Green threshold must be less than yellow threshold';
+        if (isset($this->thresholds['current'], $this->thresholds['medium'], $this->thresholds['old'])) {
+            if ($this->thresholds['current'] >= $this->thresholds['medium']) {
+                $errors[] = 'Current threshold must be less than medium threshold';
             }
-            if ($this->thresholds['yellow'] >= $this->thresholds['red']) {
-                $errors[] = 'Yellow threshold must be less than red threshold';
+            if ($this->thresholds['medium'] >= $this->thresholds['old']) {
+                $errors[] = 'Medium threshold must be less than old threshold';
             }
         }
 

@@ -63,16 +63,7 @@ class WhitelistService
      */
     public function createDefaultWhitelist(string $filePath): void
     {
-        $defaultPackages = [
-            'psr/log',
-            'psr/container',
-            'psr/http-message',
-            'psr/http-factory',
-            'psr/cache',
-            'psr/simple-cache',
-            'psr/event-dispatcher',
-            'psr/http-client',
-        ];
+        $defaultPackages = Configuration::DEFAULT_IGNORE_PACKAGES;
 
         $content = [
             'description' => 'Dependency Age Plugin - Package Whitelist',

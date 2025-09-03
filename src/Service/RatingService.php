@@ -127,9 +127,9 @@ class RatingService
     public function getRatingDistribution(array $packages, array $thresholds = [], ?DateTimeImmutable $referenceDate = null): array
     {
         $distribution = [
-            'green' => 0,
-            'yellow' => 0,
-            'red' => 0,
+            'current' => 0,
+            'medium' => 0,
+            'old' => 0,
             'unknown' => 0,
         ];
 
@@ -172,9 +172,9 @@ class RatingService
      */
     public function hasCriticalPackages(array $packages, array $thresholds = [], ?DateTimeImmutable $referenceDate = null): bool
     {
-        $redPackages = $this->getPackagesByRating($packages, 'red', $thresholds, $referenceDate);
+        $criticalPackages = $this->getPackagesByRating($packages, 'old', $thresholds, $referenceDate);
 
-        return !empty($redPackages);
+        return !empty($criticalPackages);
     }
 
     /**
@@ -195,11 +195,14 @@ class RatingService
                 'total_packages' => 0,
                 'distribution' => $distribution,
                 'percentages' => [
-                    'green' => 0.0,
-                    'yellow' => 0.0,
-                    'red' => 0.0,
+                    'current' => 0.0,
+                    'medium' => 0.0,
+                    'old' => 0.0,
                     'unknown' => 0.0,
                 ],
+                'dominant_category' => 'unknown',
+                'dominant_count' => 0,
+                'dominant_percentage' => 0.0,
                 'has_critical' => false,
                 'health_score' => 0.0,
             ];
@@ -210,16 +213,49 @@ class RatingService
             $percentages[$category] = round(($count / $total) * 100, 1);
         }
 
-        // Calculate health score (100% for all green, 0% for all red)
-        $healthScore = (($distribution['green'] * 1.0) + ($distribution['yellow'] * 0.5)) / $total * 100;
+        // Find the dominant category (most packages)
+        $maxCount = max($distribution ?: [0]); // Ensure non-empty array
+        $dominantCategory = array_keys($distribution, $maxCount)[0] ?? 'unknown';
+        $dominantCount = $distribution[$dominantCategory];
+        $dominantPercentage = $percentages[$dominantCategory];
+
+        // Calculate health score (current = 1.0, medium = 0.5, old = 0.0, unknown = 0.0)
+        $healthScore = 0.0;
+        if ($total > 0) {
+            $healthScore = (($distribution['current'] * 1.0) + ($distribution['medium'] * 0.5)) / $total * 100;
+        }
 
         return [
             'total_packages' => $total,
             'distribution' => $distribution,
             'percentages' => $percentages,
-            'has_critical' => $distribution['red'] > 0,
+            'dominant_category' => $dominantCategory,
+            'dominant_count' => $dominantCount,
+            'dominant_percentage' => $dominantPercentage,
+            'overall_rating' => $this->calculateOverallRating($percentages),
+            'has_critical' => ($distribution['old'] ?? 0) > 0,
             'health_score' => round($healthScore, 1),
         ];
+    }
+
+    /**
+     * Calculate overall project rating based on percentages.
+     *
+     * @param array<string, float> $percentages
+     */
+    public function calculateOverallRating(array $percentages): string
+    {
+        $currentPercent = $percentages['current'] ?? 0;
+        $oldPercent = $percentages['old'] ?? 0;
+
+        // Overall rating logic (same as TableRenderer)
+        if ($currentPercent >= 70) {
+            return '✓ mostly current';
+        } elseif ($oldPercent >= 30) {
+            return '! needs attention';
+        } else {
+            return '~ moderately current';
+        }
     }
 
     /**
@@ -228,9 +264,9 @@ class RatingService
     public function getCategoryEmoji(string $category): string
     {
         return match ($category) {
-            'green' => '🟢',
-            'yellow' => '🟡',
-            'red' => '🔴',
+            'current' => '🟢',
+            'medium' => '🟡',
+            'old' => '🔴',
             'unknown' => '⚪',
             default => '❓',
         };
@@ -242,9 +278,9 @@ class RatingService
     public function getCategoryDescription(string $category): string
     {
         return match ($category) {
-            'green' => 'Current',
-            'yellow' => 'Outdated',
-            'red' => 'Critical',
+            'current' => 'Current',
+            'medium' => 'Outdated',
+            'old' => 'Critical',
             'unknown' => 'Unknown',
             default => 'Unknown',
         };
@@ -308,7 +344,7 @@ class RatingService
         $errors = [];
 
         // Check required keys
-        $requiredKeys = ['green', 'yellow'];
+        $requiredKeys = ['current', 'medium'];
         foreach ($requiredKeys as $key) {
             if (!array_key_exists($key, $thresholds)) {
                 $errors[] = "Missing required threshold key: {$key}";
@@ -323,8 +359,8 @@ class RatingService
 
         // If we have both keys, check logical order
         if (empty($errors) || count($errors) < 2) {
-            if (isset($thresholds['green'], $thresholds['yellow']) && $thresholds['green'] >= $thresholds['yellow']) {
-                $errors[] = "Green threshold ({$thresholds['green']}) must be less than yellow threshold ({$thresholds['yellow']})";
+            if (isset($thresholds['current'], $thresholds['medium']) && $thresholds['current'] >= $thresholds['medium']) {
+                $errors[] = "Current threshold ({$thresholds['current']}) must be less than medium threshold ({$thresholds['medium']})";
             }
         }
 
