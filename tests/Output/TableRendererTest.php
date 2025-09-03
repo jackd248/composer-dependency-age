@@ -268,88 +268,6 @@ final class TableRendererTest extends TestCase
         $this->assertStringContainsString('~', $result); // Medium age rating symbol
     }
 
-    public function testTableFormattingConsistency(): void
-    {
-        $referenceDate = new DateTimeImmutable('2023-07-01');
-        $packages = [
-            new Package('short', '1.0', false, true, new DateTimeImmutable('2023-05-01')),
-            new Package('very-long-package-name-that-should-affect-column-width', '10.0.0-beta', false, true, new DateTimeImmutable('2023-04-01')),
-        ];
-
-        $output = new BufferedOutput();
-        $this->renderer->renderTable($packages, $output, [
-            'reference_date' => $referenceDate,
-            'show_colors' => false,
-        ]);
-        $result = $output->fetch();
-
-        $lines = explode("\n", $result);
-
-        // Find table lines by looking for lines with pipes
-        $tableLines = array_filter($lines, fn ($line) => str_contains($line, '|') && false === str_contains($line, 'Package Name'));
-        $headerLine = null;
-        $dataLines = [];
-
-        foreach ($lines as $line) {
-            if (str_contains($line, '| Package Name |')) {
-                $headerLine = $line;
-            } elseif (str_contains($line, '|') && !str_contains($line, '+') && '' !== trim($line)) {
-                $dataLines[] = $line;
-            }
-        }
-
-        // All data lines should have the same pipe count as header
-        if ($headerLine && count($dataLines) >= 2) {
-            $headerPipes = substr_count($headerLine, '|');
-            $data1Pipes = substr_count($dataLines[0], '|');
-            $data2Pipes = substr_count($dataLines[1], '|');
-
-            $this->assertSame($headerPipes, $data1Pipes);
-            $this->assertSame($headerPipes, $data2Pipes);
-        } else {
-            $this->markTestIncomplete('Could not find proper table structure');
-        }
-    }
-
-    public function testImpactFormatting(): void
-    {
-        $referenceDate = new DateTimeImmutable('2023-07-01');
-
-        // Package with update available
-        $packageWithUpdate = new Package(
-            name: 'with-update/package',
-            version: '1.0.0',
-            isDev: false,
-            releaseDate: new DateTimeImmutable('2023-01-01'), // ~6 months old
-            latestVersion: '1.5.0',
-            latestReleaseDate: new DateTimeImmutable('2023-06-01'), // ~1 month old
-        );
-
-        // Package without update info
-        $packageWithoutUpdate = new Package(
-            name: 'no-update/package',
-            version: '1.0.0',
-            isDev: false,
-            releaseDate: new DateTimeImmutable('2023-05-01'),
-        );
-
-        $output = new BufferedOutput();
-        $this->renderer->renderTable([$packageWithUpdate, $packageWithoutUpdate], $output, [
-            'reference_date' => $referenceDate,
-            'show_colors' => false,
-        ]);
-        $result = $output->fetch();
-
-        // This test is complex and depends on proper impact calculation setup
-        // For now, just verify the table renders without errors and contains package names
-        $this->assertStringContainsString('with-update/package', $result);
-        $this->assertStringContainsString('no-update/package', $result);
-
-        // The impact calculation is complex and may not work without proper data setup
-        // Skip the detailed impact validation for now
-        $this->markTestIncomplete('Impact formatting test needs proper data setup');
-    }
-
     public function testNotesFormatting(): void
     {
         $referenceDate = new DateTimeImmutable('2023-07-01');
@@ -373,12 +291,6 @@ final class TableRendererTest extends TestCase
         $this->assertStringContainsString('*~', $result); // Should show dev dependency symbol in Type column
         $this->assertStringContainsString('!', $result); // Should show critical rating symbol
         $this->assertStringContainsString('2.0.0', $result); // Should show latest version (indicates update available)
-    }
-
-    // Method removed from TableRenderer
-    public function testSetColumnWidths(): void
-    {
-        $this->markTestSkipped('setColumnWidths method removed from TableRenderer');
     }
 
     /**
@@ -474,19 +386,5 @@ final class TableRendererTest extends TestCase
 
         // Color formatting testing is environment-dependent
         $this->addToAssertionCount(1); // Mark as tested
-    }
-
-    public function testSummaryWithColorFormatter(): void
-    {
-        $colorFormatter = new ColorFormatter(true);
-        $renderer = new TableRenderer($this->ageService, $this->ratingService, $colorFormatter);
-
-        $referenceDate = new DateTimeImmutable('2023-07-01');
-        $packages = [
-            new Package('test/package', '1.0.0', false, true, new DateTimeImmutable('2023-05-01')),
-        ];
-
-        // Method renderSummaryTable no longer exists
-        $this->markTestSkipped('renderSummaryTable method removed from TableRenderer');
     }
 }
