@@ -394,10 +394,20 @@ class TableRenderer
         $summaryTable->addRow(['Total Age', '<options=bold>'.$totalAge.'</options=bold>']);
         $summaryTable->addRow(['Average Age', $averageAge]);
         $summaryTable->addRow(['Packages', $packageCounts]);
-        $summaryTable->addRow(['Update Impact', $updateImpact]);
+
+        // Only show Update Impact if there's actual data
+        if (!empty($updateImpact)) {
+            $summaryTable->addRow(['Update Impact', $updateImpact]);
+        }
+
         $summaryTable->addRow(['Rating', $overallRating]);
 
         $summaryTable->render();
+
+        // Add verbose explanation of rating calculation
+        if ($output->isVerbose()) {
+            $this->renderVerboseRatingExplanation($packages, $output, $thresholds, $referenceDate);
+        }
 
         if (!$directModeActive) {
             $output->writeln('');
@@ -445,5 +455,53 @@ class TableRenderer
         $summary = $this->ratingService->getRatingSummary($packages, $thresholds, $referenceDate);
 
         return $summary['overall_rating'] ?? '<fg=gray>?</fg=gray> unknown';
+    }
+
+    /**
+     * Render verbose explanation of how the overall rating is calculated.
+     *
+     * @param array<Package>       $packages
+     * @param array<string, float> $thresholds
+     */
+    private function renderVerboseRatingExplanation(array $packages, OutputInterface $output, array $thresholds = [], ?DateTimeImmutable $referenceDate = null): void
+    {
+        $output->writeln('');
+        $output->writeln('<comment>Rating Calculation Details:</comment>');
+
+        // Calculate distribution
+        $summary = $this->ratingService->getRatingSummary($packages, $thresholds, $referenceDate);
+        $distribution = $summary['distribution'] ?? [];
+        $percentages = $summary['percentages'] ?? [];
+        $total = $summary['total_packages'] ?? count($packages);
+
+        if (0 === $total) {
+            $output->writeln('No packages to analyze.');
+
+            return;
+        }
+
+        $currentPercent = round($percentages['current'] ?? 0, 1);
+        $mediumPercent = round($percentages['medium'] ?? 0, 1);
+        $oldPercent = round($percentages['old'] ?? 0, 1);
+        $unknownPercent = round($percentages['unknown'] ?? 0, 1);
+
+        $output->writeln(sprintf('Package Distribution:'));
+        $output->writeln(sprintf('  • <fg=green>Current</fg=green> (≤ 6 months): %d packages (%.1f%%)', $distribution['current'] ?? 0, $currentPercent));
+        $output->writeln(sprintf('  • <fg=yellow>Medium</fg=yellow> (≤ 12 months): %d packages (%.1f%%)', $distribution['medium'] ?? 0, $mediumPercent));
+        $output->writeln(sprintf('  • <fg=red>Old</fg=red> (> 12 months): %d packages (%.1f%%)', $distribution['old'] ?? 0, $oldPercent));
+        if (($distribution['unknown'] ?? 0) > 0) {
+            $output->writeln(sprintf('  • <fg=gray>Unknown</fg=gray>: %d packages (%.1f%%)', $distribution['unknown'] ?? 0, $unknownPercent));
+        }
+
+        $output->writeln('');
+        $output->writeln('Overall Rating Logic:');
+
+        if ($currentPercent >= 70) {
+            $output->writeln(sprintf('  → <fg=green>✓ Mostly Current</fg=green>: %.1f%% current packages ≥ 70%%', $currentPercent));
+        } elseif ($oldPercent >= 30) {
+            $output->writeln(sprintf('  → <fg=red>! Needs Attention</fg=red>: %.1f%% old packages ≥ 30%%', $oldPercent));
+        } else {
+            $output->writeln(sprintf('  → <fg=yellow>~ Moderately Current</fg=yellow>: %.1f%% current < 70%% AND %.1f%% old < 30%%', $currentPercent, $oldPercent));
+        }
     }
 }

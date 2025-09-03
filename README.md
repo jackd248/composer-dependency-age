@@ -29,6 +29,8 @@ composer require konradmichalik/composer-dependency-age --dev
 ## 📊 Usage
 
 ### Command
+Run the command to fully analyze your dependencies:
+
 ```bash
 composer dependency-age
 ```
@@ -81,36 +83,6 @@ Dependency age ~ // 21.9 years in total (9 months average per package). Use comp
 }
 ```
 
-#### Event Integration Options
-
-| Option | Description | Default | Example |
-|--------|-------------|---------|---------|
-| `event_integration` | Enable/disable automatic analysis after composer operations | `true` | `false` |
-| `event_operations` | Which operations trigger analysis | `["install", "update"]` | `["install"]` |
-| `event_analysis_limit` | Maximum packages to analyze in quick mode | `10` | `20` |
-
-**To disable composer hooks entirely:**
-```json
-{
-  "extra": {
-    "dependency-age": {
-      "event_integration": false
-    }
-  }
-}
-```
-
-**To run analysis only after install (not update):**
-```json
-{
-  "extra": {
-    "dependency-age": {
-      "event_operations": ["install"]
-    }
-  }
-}
-```
-
 ## 📈 Age Categories
 
 | Category | Sign | Timeframe | Description |
@@ -119,6 +91,21 @@ Dependency age ~ // 21.9 years in total (9 months average per package). Use comp
 | Medium | ~️   | ≤ 12 months | Moderately aged dependencies |
 | Old | !    | > 12 months | Dependencies released over a year ago |
 | Unknown | ?    | - | Dependencies without release date information |
+
+### Overall Project Rating
+
+The overall rating in the summary is calculated based on the distribution of your dependencies:
+
+| Rating | Symbol | Logic | Description |
+|--------|--------|-------|-------------|
+| **Mostly Current** | ✅ | ≥ 70% Current packages | Your project uses predominantly recent dependencies |
+| **Needs Attention** | 🔴 | ≥ 30% Old packages | Significant portion of dependencies are outdated |
+| **Moderately Current** | 🟡 | All other cases | Balanced mix of current and older dependencies |
+
+**Examples:**
+- 80% Current, 15% Medium, 5% Old → ✅ **Mostly Current**
+- 60% Current, 30% Medium, 10% Old → 🟡 **Moderately Current**
+- 50% Current, 20% Medium, 30% Old → 🔴 **Needs Attention**
 
 ## 🧑‍💻 Contributing
 
