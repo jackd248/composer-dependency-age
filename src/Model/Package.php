@@ -28,16 +28,16 @@ use DateTimeImmutable;
 /**
  * Represents a Composer package with its metadata.
  */
-final readonly class Package
+final class Package
 {
     public function __construct(
-        public string $name,
-        public string $version,
-        public bool $isDev = false,
-        public bool $isDirect = false,
-        public ?DateTimeImmutable $releaseDate = null,
-        public ?string $latestVersion = null,
-        public ?DateTimeImmutable $latestReleaseDate = null,
+        public readonly string $name,
+        public readonly string $version,
+        public readonly bool $isDev = false,
+        public readonly bool $isDirect = false,
+        public readonly ?DateTimeImmutable $releaseDate = null,
+        public readonly ?string $latestVersion = null,
+        public readonly ?DateTimeImmutable $latestReleaseDate = null,
     ) {}
 
     public function withReleaseDate(DateTimeImmutable $releaseDate): self
