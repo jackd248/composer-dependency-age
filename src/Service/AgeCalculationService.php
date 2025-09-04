@@ -210,6 +210,7 @@ class AgeCalculationService
                 'oldest_age_days' => null,
                 'newest_age_days' => null,
                 'potential_reduction_days' => null,
+                'total_reduction_days' => null,
             ];
         }
 
@@ -228,6 +229,7 @@ class AgeCalculationService
             'oldest_age_days' => max($ages),
             'newest_age_days' => min($ages),
             'potential_reduction_days' => $packagesWithLatest > 0 ? $totalReduction / $packagesWithLatest : null,
+            'total_reduction_days' => $packagesWithLatest > 0 ? $totalReduction : null,
         ];
     }
 }

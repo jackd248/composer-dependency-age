@@ -351,13 +351,24 @@ class TableRenderer
      */
     private function formatTotalUpdateImpact(array $statistics): string
     {
-        if (null === $statistics['potential_reduction_days']) {
+        if (null === $statistics['total_reduction_days']) {
             return '';
         }
 
-        $reductionMonths = $statistics['potential_reduction_days'] / 30.44;
+        $totalReductionDays = $statistics['total_reduction_days'];
 
-        return sprintf('- %.1f months', $reductionMonths);
+        // Format based on scale for better readability
+        if ($totalReductionDays < 30) {
+            return sprintf('- %d days', $totalReductionDays);
+        } elseif ($totalReductionDays < 365) {
+            $months = $totalReductionDays / 30.44;
+
+            return sprintf('- %.1f months', $months);
+        } else {
+            $years = $totalReductionDays / 365.25;
+
+            return sprintf('- %.1f years', $years);
+        }
     }
 
     /**
