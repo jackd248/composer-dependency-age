@@ -34,10 +34,10 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Output\BufferedOutput;
 
 /**
+ * TableRendererTest.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 final class TableRendererTest extends TestCase
 {

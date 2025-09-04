@@ -33,10 +33,10 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
+ * PackageInfoServiceTest.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 final class PackageInfoServiceTest extends TestCase
 {
@@ -328,8 +328,6 @@ final class PackageInfoServiceTest extends TestCase
 /**
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 class($this->mockClient) extends PackageInfoService {
     public function testIsStableVersion(string $version): bool

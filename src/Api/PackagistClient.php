@@ -27,10 +27,10 @@ use CurlHandle;
 use KonradMichalik\ComposerDependencyAge\Exception\ApiException;
 
 /**
+ * PackagistClient.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 class PackagistClient
 {

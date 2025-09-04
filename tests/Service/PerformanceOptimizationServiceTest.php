@@ -26,12 +26,11 @@ namespace KonradMichalik\ComposerDependencyAge\Tests\Service;
 use KonradMichalik\ComposerDependencyAge\Service\PerformanceOptimizationService;
 use PHPUnit\Framework\TestCase;
 
-
 /**
+ * PerformanceOptimizationServiceTest.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 final class PerformanceOptimizationServiceTest extends TestCase
 {

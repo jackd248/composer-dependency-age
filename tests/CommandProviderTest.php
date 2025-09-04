@@ -29,10 +29,10 @@ use KonradMichalik\ComposerDependencyAge\CommandProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
+ * CommandProviderTest.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 final class CommandProviderTest extends TestCase
 {

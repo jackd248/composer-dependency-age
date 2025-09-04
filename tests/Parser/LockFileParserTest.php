@@ -29,10 +29,10 @@ use KonradMichalik\ComposerDependencyAge\Parser\LockFileParser;
 use PHPUnit\Framework\TestCase;
 
 /**
+ * LockFileParserTest.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 final class LockFileParserTest extends TestCase
 {

@@ -26,10 +26,10 @@ namespace KonradMichalik\ComposerDependencyAge\Configuration;
 use KonradMichalik\ComposerDependencyAge\Exception\WhitelistException;
 
 /**
+ * WhitelistService.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 class WhitelistService
 {

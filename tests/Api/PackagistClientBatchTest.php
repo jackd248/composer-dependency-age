@@ -26,12 +26,11 @@ namespace KonradMichalik\ComposerDependencyAge\Tests\Api;
 use KonradMichalik\ComposerDependencyAge\Api\PackagistClient;
 use PHPUnit\Framework\TestCase;
 
-
 /**
+ * PackagistClientBatchTest.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 final class PackagistClientBatchTest extends TestCase
 {

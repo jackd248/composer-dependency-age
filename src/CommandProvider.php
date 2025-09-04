@@ -27,10 +27,10 @@ use Composer\Plugin\Capability\CommandProvider as CommandProviderCapability;
 use KonradMichalik\ComposerDependencyAge\Command\DependencyAgeCommand;
 
 /**
+ * CommandProvider.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 final class CommandProvider implements CommandProviderCapability
 {

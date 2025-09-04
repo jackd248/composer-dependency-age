@@ -40,10 +40,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
 
 /**
+ * DependencyAgeCommand.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 final class DependencyAgeCommand extends BaseCommand
 {

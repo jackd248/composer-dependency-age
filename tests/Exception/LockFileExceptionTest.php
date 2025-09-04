@@ -30,10 +30,10 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 /**
+ * LockFileExceptionTest.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 final class LockFileExceptionTest extends TestCase
 {

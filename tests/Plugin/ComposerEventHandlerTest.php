@@ -31,12 +31,11 @@ use KonradMichalik\ComposerDependencyAge\Plugin\ComposerEventHandler;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
-
 /**
+ * ComposerEventHandlerTest.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 final class ComposerEventHandlerTest extends TestCase
 {

@@ -28,10 +28,10 @@ use KonradMichalik\ComposerDependencyAge\Exception\WhitelistException;
 use PHPUnit\Framework\TestCase;
 
 /**
+ * WhitelistServiceTest.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 final class WhitelistServiceTest extends TestCase
 {

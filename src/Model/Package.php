@@ -26,10 +26,10 @@ namespace KonradMichalik\ComposerDependencyAge\Model;
 use DateTimeImmutable;
 
 /**
+ * Package.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 final class Package
 {

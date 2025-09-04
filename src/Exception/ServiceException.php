@@ -26,9 +26,9 @@ namespace KonradMichalik\ComposerDependencyAge\Exception;
 use RuntimeException;
 
 /**
+ * ServiceException.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 class ServiceException extends RuntimeException {}

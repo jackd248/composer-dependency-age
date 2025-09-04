@@ -30,10 +30,10 @@ use KonradMichalik\ComposerDependencyAge\Model\Package;
 use Throwable;
 
 /**
+ * RatingService.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 class RatingService
 {

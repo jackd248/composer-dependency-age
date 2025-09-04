@@ -24,10 +24,10 @@ declare(strict_types=1);
 namespace KonradMichalik\ComposerDependencyAge\Configuration;
 
 /**
+ * Configuration.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 final class Configuration
 {

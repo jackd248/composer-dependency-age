@@ -27,10 +27,10 @@ use DateTimeImmutable;
 use KonradMichalik\ComposerDependencyAge\Exception\CacheException;
 
 /**
+ * CacheService.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 class CacheService
 {

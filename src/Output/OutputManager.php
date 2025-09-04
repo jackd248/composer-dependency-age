@@ -31,10 +31,10 @@ use KonradMichalik\ComposerDependencyAge\Service\RatingService;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
+ * OutputManager.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 final class OutputManager
 {

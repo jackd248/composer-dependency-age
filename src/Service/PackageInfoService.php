@@ -31,10 +31,10 @@ use KonradMichalik\ComposerDependencyAge\Exception\PackageInfoException;
 use KonradMichalik\ComposerDependencyAge\Model\Package;
 
 /**
+ * PackageInfoService.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 class PackageInfoService
 {

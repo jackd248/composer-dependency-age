@@ -30,10 +30,10 @@ use KonradMichalik\ComposerDependencyAge\Plugin;
 use PHPUnit\Framework\TestCase;
 
 /**
+ * PluginTest.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 final class PluginTest extends TestCase
 {

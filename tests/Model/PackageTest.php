@@ -28,10 +28,10 @@ use KonradMichalik\ComposerDependencyAge\Model\Package;
 use PHPUnit\Framework\TestCase;
 
 /**
+ * PackageTest.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 final class PackageTest extends TestCase
 {

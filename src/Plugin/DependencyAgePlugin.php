@@ -33,10 +33,10 @@ use Composer\Script\ScriptEvents;
 use Throwable;
 
 /**
+ * DependencyAgePlugin.
+ *
  * @author Konrad Michalik <hej@konradmichalik.dev>
  * @license GPL-3.0-or-later
- *
- * @package ComposerDependencyAge
  */
 final class DependencyAgePlugin implements PluginInterface, EventSubscriberInterface, Capable
 {
