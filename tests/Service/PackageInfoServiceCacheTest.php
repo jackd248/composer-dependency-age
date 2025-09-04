@@ -230,7 +230,7 @@ final class PackageInfoServiceCacheTest extends TestCase
         $this->mockCache
             ->expects(self::once())
             ->method('storePackageInfo')
-            ->with('vendor/package2', '2.0.0', self::isArray());
+            ->with('vendor/package2', '2.0.0', $this->callback(fn ($value) => is_array($value)));
 
         $results = $this->service->enrichPackagesWithReleaseInfo($packages);
 
