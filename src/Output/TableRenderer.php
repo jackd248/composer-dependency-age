@@ -79,6 +79,13 @@ class TableRenderer
             $table->addRow($row);
         }
 
+        // Add separator
+        $table->addRow(new \Symfony\Component\Console\Helper\TableSeparator());
+
+        // Add summary row
+        $summaryRow = $this->formatSummaryRow($sortedPackages, $columns, $thresholds, $referenceDate);
+        $table->addRow($summaryRow);
+
         $table->render();
 
         // Show legend after table
@@ -147,6 +154,39 @@ class TableRenderer
                 'impact' => $this->formatImpact($package, $detailed),
                 'notes' => $this->formatNotes($package, $detailed),
                 'dev' => $package->isDev ? 'Yes' : 'No',
+                default => '',
+            };
+        }
+
+        return $row;
+    }
+
+    /**
+     * Format summary row for the table.
+     *
+     * @param array<Package>       $packages
+     * @param array<string>        $columns
+     * @param array<string, float> $thresholds
+     *
+     * @return array<string>
+     */
+    private function formatSummaryRow(array $packages, array $columns, array $thresholds = [], ?DateTimeImmutable $referenceDate = null): array
+    {
+        $row = [];
+        $totalAge = $this->formatTotalPackageAge($packages, $referenceDate);
+        $overallRating = $this->getOverallRating($packages, $thresholds, $referenceDate);
+
+        foreach ($columns as $column) {
+            $row[] = match ($column) {
+                'package' => '∑', // Sum symbol
+                'version' => '',
+                'type' => '',
+                'age' => '<options=bold>'.$totalAge.'</options=bold>',
+                'rating' => $overallRating,
+                'latest' => '',
+                'impact' => '',
+                'notes' => '',
+                'dev' => '',
                 default => '',
             };
         }
