@@ -32,7 +32,10 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 /**
- * Test JSON formatter functionality.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 final class JsonFormatterTest extends TestCase
 {

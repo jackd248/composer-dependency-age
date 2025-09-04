@@ -30,7 +30,10 @@ use KonradMichalik\ComposerDependencyAge\Model\Package;
 use Throwable;
 
 /**
- * Service for rating packages based on their age and thresholds.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 class RatingService
 {

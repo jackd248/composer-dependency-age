@@ -28,7 +28,10 @@ use KonradMichalik\ComposerDependencyAge\Exception\ApiException;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Test the PackagistClient class.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 final class PackagistClientTest extends TestCase
 {

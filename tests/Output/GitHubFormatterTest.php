@@ -31,7 +31,10 @@ use KonradMichalik\ComposerDependencyAge\Service\RatingService;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Test GitHub Markdown formatter functionality.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 final class GitHubFormatterTest extends TestCase
 {

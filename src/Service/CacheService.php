@@ -27,24 +27,10 @@ use DateTimeImmutable;
 use KonradMichalik\ComposerDependencyAge\Exception\CacheException;
 
 /**
- * Service for caching package information to improve performance.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
  *
- * Cache file format:
- * {
- *   "version": "1.0",
- *   "created": "2023-07-01T12:00:00+00:00",
- *   "ttl": 86400,
- *   "packages": {
- *     "vendor/package": {
- *       "1.0.0": {
- *         "release_date": "2023-01-01T12:00:00+00:00",
- *         "latest_version": "1.0.1",
- *         "latest_release_date": "2023-02-01T12:00:00+00:00",
- *         "cached_at": "2023-07-01T12:00:00+00:00"
- *       }
- *     }
- *   }
- * }
+ * @package ComposerDependencyAge
  */
 class CacheService
 {

@@ -33,7 +33,10 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Test the PackageInfoService class.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 final class PackageInfoServiceTest extends TestCase
 {
@@ -321,12 +324,19 @@ final class PackageInfoServiceTest extends TestCase
     public function testIsStableVersionDetection(): void
     {
         // Create a test service that exposes the private method for testing
-        $testService = new class($this->mockClient) extends PackageInfoService {
-            public function testIsStableVersion(string $version): bool
-            {
-                return $this->isStableVersion($version);
-            }
-        };
+        $testService = new
+/**
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
+ */
+class($this->mockClient) extends PackageInfoService {
+    public function testIsStableVersion(string $version): bool
+    {
+        return $this->isStableVersion($version);
+    }
+};
 
         // Test stable versions
         $this->assertTrue($testService->testIsStableVersion('1.0.0'));

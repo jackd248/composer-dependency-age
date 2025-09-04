@@ -30,7 +30,10 @@ use Composer\Plugin\Capable;
 use Composer\Plugin\PluginInterface;
 
 /**
- * Main plugin class that integrates with Composer.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 final class Plugin implements PluginInterface, Capable
 {

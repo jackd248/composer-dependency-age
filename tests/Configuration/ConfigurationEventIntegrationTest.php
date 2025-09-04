@@ -26,6 +26,13 @@ namespace KonradMichalik\ComposerDependencyAge\Tests\Configuration;
 use KonradMichalik\ComposerDependencyAge\Configuration\Configuration;
 use PHPUnit\Framework\TestCase;
 
+
+/**
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
+ */
 final class ConfigurationEventIntegrationTest extends TestCase
 {
     public function testDefaultEventIntegrationConfiguration(): void

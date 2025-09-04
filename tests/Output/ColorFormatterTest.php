@@ -29,7 +29,10 @@ use KonradMichalik\ComposerDependencyAge\Output\ColorFormatter;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Test the ColorFormatter class.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 final class ColorFormatterTest extends TestCase
 {

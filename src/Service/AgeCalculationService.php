@@ -27,7 +27,10 @@ use DateTimeImmutable;
 use KonradMichalik\ComposerDependencyAge\Model\Package;
 
 /**
- * Service for calculating and formatting package ages.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 class AgeCalculationService
 {

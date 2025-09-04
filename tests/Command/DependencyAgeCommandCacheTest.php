@@ -30,7 +30,10 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 
 /**
- * Test cache-related functionality in DependencyAgeCommand.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 final class DependencyAgeCommandCacheTest extends TestCase
 {

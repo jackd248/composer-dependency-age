@@ -26,7 +26,10 @@ namespace KonradMichalik\ComposerDependencyAge\Output;
 use InvalidArgumentException;
 
 /**
- * Utility for formatting text with ANSI colors in terminal output.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 class ColorFormatter
 {

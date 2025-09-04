@@ -24,7 +24,10 @@ declare(strict_types=1);
 namespace KonradMichalik\ComposerDependencyAge\Service;
 
 /**
- * Service for performance optimization and memory management.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 final class PerformanceOptimizationService
 {

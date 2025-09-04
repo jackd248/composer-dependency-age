@@ -26,6 +26,9 @@ namespace KonradMichalik\ComposerDependencyAge\Exception;
 use RuntimeException;
 
 /**
- * Exception thrown when configuration is invalid.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 class ConfigurationException extends RuntimeException {}

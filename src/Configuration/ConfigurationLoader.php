@@ -29,7 +29,10 @@ use KonradMichalik\ComposerDependencyAge\Exception\ConfigurationException;
 use Symfony\Component\Console\Input\InputInterface;
 
 /**
- * Loads configuration from various sources.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 final class ConfigurationLoader
 {

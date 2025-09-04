@@ -29,7 +29,10 @@ use KonradMichalik\ComposerDependencyAge\Service\CacheService;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Test the CacheService class.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 final class CacheServiceTest extends TestCase
 {

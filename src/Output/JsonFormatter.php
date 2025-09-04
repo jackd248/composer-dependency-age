@@ -30,7 +30,10 @@ use KonradMichalik\ComposerDependencyAge\Service\RatingService;
 use RuntimeException;
 
 /**
- * Formats dependency age data as JSON for CI/CD integration.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 final class JsonFormatter
 {

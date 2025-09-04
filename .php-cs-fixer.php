@@ -36,5 +36,18 @@ $header = Rules\Header::create(
 
 return Config::create()
     ->withRule($header)
+    ->withRule(
+        Rules\RuleSet::fromArray(
+            KonradMichalik\PhpDocBlockHeaderFixer\Generators\DocBlockHeader::create(
+                [
+                    'author' => 'Konrad Michalik <hej@konradmichalik.dev>',
+                    'license' => 'GPL-3.0-or-later',
+                    'package' => 'ComposerDependencyAge',
+                ],
+            )->__toArray(),
+        ),
+    )
     ->withFinder(static fn (Finder\Finder $finder) => $finder->in(__DIR__))
-;
+    ->registerCustomFixers([
+        new KonradMichalik\PhpDocBlockHeaderFixer\Rules\DocBlockHeaderFixer(),
+    ]);

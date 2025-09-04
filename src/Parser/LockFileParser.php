@@ -28,7 +28,10 @@ use KonradMichalik\ComposerDependencyAge\Exception\LockFileException;
 use KonradMichalik\ComposerDependencyAge\Model\Package;
 
 /**
- * Parses composer.lock files to extract package information.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 final class LockFileParser
 {

@@ -26,7 +26,10 @@ namespace KonradMichalik\ComposerDependencyAge\Service;
 use Throwable;
 
 /**
- * Service for detecting appropriate cache file paths based on platform.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 class CachePathService
 {

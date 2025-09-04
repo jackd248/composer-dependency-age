@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a8d9020005f9daf508cac2e47378c8a8",
+    "content-hash": "1443efc05bc3f167992a9f848deaf348",
     "packages": [
         {
             "name": "psr/container",
@@ -2391,6 +2391,58 @@
                 "source": "https://github.com/jsonrainbow/json-schema/tree/6.5.1"
             },
             "time": "2025-08-29T10:58:11+00:00"
+        },
+        {
+            "name": "konradmichalik/php-doc-block-header-fixer",
+            "version": "0.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/jackd248/php-doc-block-header-fixer.git",
+                "reference": "ba41a5a3619739bece0045dcb91db8e92883897d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/jackd248/php-doc-block-header-fixer/zipball/ba41a5a3619739bece0045dcb91db8e92883897d",
+                "reference": "ba41a5a3619739bece0045dcb91db8e92883897d",
+                "shasum": ""
+            },
+            "require": {
+                "ext-tokenizer": "*",
+                "friendsofphp/php-cs-fixer": "^3.14",
+                "php": "~8.1.0 || ~8.2.0 || ~8.3.0 || ~8.4.0"
+            },
+            "require-dev": {
+                "armin/editorconfig-cli": "^1.0 || ^2.0",
+                "eliashaeussler/php-cs-fixer-config": "2.3.0",
+                "eliashaeussler/rector-config": "^3.0",
+                "ergebnis/composer-normalize": "^2.44",
+                "phpstan/phpstan": "^2.0",
+                "phpstan/phpstan-phpunit": "^2.0",
+                "phpstan/phpstan-symfony": "^2.0",
+                "phpunit/phpunit": "^10.2 || ^11.0 || ^12.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "KonradMichalik\\PhpDocBlockHeaderFixer\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-3.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "Konrad Michalik",
+                    "email": "hej@konradmichalik.dev",
+                    "role": "Maintainer"
+                }
+            ],
+            "support": {
+                "issues": "https://github.com/jackd248/php-doc-block-header-fixer/issues",
+                "source": "https://github.com/jackd248/php-doc-block-header-fixer/tree/0.1.0"
+            },
+            "time": "2025-08-08T08:12:48+00:00"
         },
         {
             "name": "localheinz/diff",

@@ -30,6 +30,13 @@ use KonradMichalik\ComposerDependencyAge\Plugin\DependencyAgePlugin;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
+
+/**
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
+ */
 final class DependencyAgePluginTest extends TestCase
 {
     private DependencyAgePlugin $plugin;

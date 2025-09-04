@@ -29,7 +29,10 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 /**
- * Test the ServiceException class.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 final class ServiceExceptionTest extends TestCase
 {

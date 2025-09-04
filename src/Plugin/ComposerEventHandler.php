@@ -38,7 +38,10 @@ use Symfony\Component\Console\Input\ArrayInput;
 use Throwable;
 
 /**
- * Handles Composer events for dependency age analysis.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 final class ComposerEventHandler
 {

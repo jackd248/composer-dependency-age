@@ -26,6 +26,9 @@ namespace KonradMichalik\ComposerDependencyAge\Exception;
 use RuntimeException;
 
 /**
- * Exception thrown when there are issues parsing composer.lock files.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 final class LockFileException extends RuntimeException {}

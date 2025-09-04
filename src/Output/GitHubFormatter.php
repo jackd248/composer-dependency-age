@@ -29,7 +29,10 @@ use KonradMichalik\ComposerDependencyAge\Service\AgeCalculationService;
 use KonradMichalik\ComposerDependencyAge\Service\RatingService;
 
 /**
- * Formats dependency age data as GitHub-compatible Markdown.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 final class GitHubFormatter
 {

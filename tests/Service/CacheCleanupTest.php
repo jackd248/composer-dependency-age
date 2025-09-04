@@ -28,7 +28,10 @@ use KonradMichalik\ComposerDependencyAge\Service\CacheService;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Test cache cleanup and size limit functionality.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 final class CacheCleanupTest extends TestCase
 {

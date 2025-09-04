@@ -36,7 +36,10 @@ use RuntimeException;
 use stdClass;
 
 /**
- * Test the RatingService class.
+ * @author Konrad Michalik <hej@konradmichalik.dev>
+ * @license GPL-3.0-or-later
+ *
+ * @package ComposerDependencyAge
  */
 final class RatingServiceTest extends TestCase
 {
