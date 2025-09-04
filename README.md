@@ -85,7 +85,7 @@ Dependency age ~ // 21.9 years in total (9 months average per package). Use comp
       "cache_ttl": 86400,
       "event_integration": true,
       "event_operations": ["install", "update"],
-      "event_analysis_limit": 10
+      "event_force_without_cache": false
     }
   }
 }

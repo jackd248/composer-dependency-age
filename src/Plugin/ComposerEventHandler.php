@@ -233,8 +233,28 @@ final class ComposerEventHandler
 
         // Check operation-specific settings
         $allowedOperations = $this->config->getEventOperations();
+        if (!in_array($operation, $allowedOperations, true)) {
+            return false;
+        }
 
-        return in_array($operation, $allowedOperations, true);
+        // Check cache availability unless forced without cache
+        if (!$this->config->isEventForceWithoutCache()) {
+            $cacheFile = $this->config->getCacheFile();
+            if (!str_starts_with($cacheFile, '/')) {
+                // Resolve relative cache file path
+                $cachePathService = new CachePathService();
+                $cacheFile = $cachePathService->getCacheFilePath();
+                $cacheFile = dirname($cacheFile).'/'.basename($this->config->getCacheFile());
+            }
+
+            if (!file_exists($cacheFile)) {
+                $this->io->write('<comment>Dependency age analysis skipped: No cache available. Run "composer dependency-age" first or enable "event_force_without_cache".</comment>');
+
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

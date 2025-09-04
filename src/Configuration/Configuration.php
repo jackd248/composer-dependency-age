@@ -68,7 +68,7 @@ final class Configuration
         private readonly ?string $whitelistFile = null,
         private readonly bool $eventIntegration = true,
         private readonly array $eventOperations = ['install', 'update'],
-        private readonly int $eventAnalysisLimit = 10,
+        private readonly bool $eventForceWithoutCache = false,
     ) {}
 
     /**
@@ -101,7 +101,7 @@ final class Configuration
             whitelistFile: $config['whitelist_file'] ?? null,
             eventIntegration: $config['event_integration'] ?? true,
             eventOperations: $config['event_operations'] ?? ['install', 'update'],
-            eventAnalysisLimit: $config['event_analysis_limit'] ?? 10,
+            eventForceWithoutCache: $config['event_force_without_cache'] ?? false,
         );
     }
 
@@ -127,7 +127,7 @@ final class Configuration
             whitelistFile: $overrides['whitelist_file'] ?? $this->whitelistFile,
             eventIntegration: $overrides['event_integration'] ?? $this->eventIntegration,
             eventOperations: $overrides['event_operations'] ?? $this->eventOperations,
-            eventAnalysisLimit: $overrides['event_analysis_limit'] ?? $this->eventAnalysisLimit,
+            eventForceWithoutCache: $overrides['event_force_without_cache'] ?? $this->eventForceWithoutCache,
         );
     }
 
@@ -210,9 +210,9 @@ final class Configuration
         return $this->eventOperations;
     }
 
-    public function getEventAnalysisLimit(): int
+    public function isEventForceWithoutCache(): bool
     {
-        return $this->eventAnalysisLimit;
+        return $this->eventForceWithoutCache;
     }
 
     public function isPackageIgnored(string $packageName): bool
@@ -299,7 +299,7 @@ final class Configuration
             'whitelist_file' => $this->whitelistFile,
             'event_integration' => $this->eventIntegration,
             'event_operations' => $this->eventOperations,
-            'event_analysis_limit' => $this->eventAnalysisLimit,
+            'event_force_without_cache' => $this->eventForceWithoutCache,
         ];
     }
 }

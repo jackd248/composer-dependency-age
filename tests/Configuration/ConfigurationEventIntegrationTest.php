@@ -34,7 +34,7 @@ final class ConfigurationEventIntegrationTest extends TestCase
 
         $this->assertTrue($config->isEventIntegrationEnabled());
         $this->assertSame(['install', 'update'], $config->getEventOperations());
-        $this->assertSame(10, $config->getEventAnalysisLimit());
+        $this->assertFalse($config->isEventForceWithoutCache());
     }
 
     public function testCustomEventIntegrationConfiguration(): void
@@ -42,12 +42,12 @@ final class ConfigurationEventIntegrationTest extends TestCase
         $config = new Configuration(
             eventIntegration: false,
             eventOperations: ['update'],
-            eventAnalysisLimit: 5,
+            eventForceWithoutCache: true,
         );
 
         $this->assertFalse($config->isEventIntegrationEnabled());
         $this->assertSame(['update'], $config->getEventOperations());
-        $this->assertSame(5, $config->getEventAnalysisLimit());
+        $this->assertTrue($config->isEventForceWithoutCache());
     }
 
     public function testFromComposerExtraWithEventIntegration(): void
@@ -56,7 +56,7 @@ final class ConfigurationEventIntegrationTest extends TestCase
             'dependency-age' => [
                 'event_integration' => false,
                 'event_operations' => ['update'],
-                'event_analysis_limit' => 15,
+                'event_force_without_cache' => true,
             ],
         ];
 
@@ -64,7 +64,7 @@ final class ConfigurationEventIntegrationTest extends TestCase
 
         $this->assertFalse($config->isEventIntegrationEnabled());
         $this->assertSame(['update'], $config->getEventOperations());
-        $this->assertSame(15, $config->getEventAnalysisLimit());
+        $this->assertTrue($config->isEventForceWithoutCache());
     }
 
     public function testFromComposerExtraWithDefaultEventIntegration(): void
@@ -75,7 +75,7 @@ final class ConfigurationEventIntegrationTest extends TestCase
 
         $this->assertTrue($config->isEventIntegrationEnabled());
         $this->assertSame(['install', 'update'], $config->getEventOperations());
-        $this->assertSame(10, $config->getEventAnalysisLimit());
+        $this->assertFalse($config->isEventForceWithoutCache());
     }
 
     public function testWithOverridesEventIntegration(): void
@@ -85,14 +85,14 @@ final class ConfigurationEventIntegrationTest extends TestCase
         $overrides = [
             'event_integration' => false,
             'event_operations' => ['install'],
-            'event_analysis_limit' => 20,
+            'event_force_without_cache' => true,
         ];
 
         $newConfig = $config->withOverrides($overrides);
 
         $this->assertFalse($newConfig->isEventIntegrationEnabled());
         $this->assertSame(['install'], $newConfig->getEventOperations());
-        $this->assertSame(20, $newConfig->getEventAnalysisLimit());
+        $this->assertTrue($newConfig->isEventForceWithoutCache());
     }
 
     public function testToArrayIncludesEventIntegration(): void
@@ -100,18 +100,18 @@ final class ConfigurationEventIntegrationTest extends TestCase
         $config = new Configuration(
             eventIntegration: false,
             eventOperations: ['update'],
-            eventAnalysisLimit: 5,
+            eventForceWithoutCache: true,
         );
 
         $array = $config->toArray();
 
         $this->assertArrayHasKey('event_integration', $array);
         $this->assertArrayHasKey('event_operations', $array);
-        $this->assertArrayHasKey('event_analysis_limit', $array);
+        $this->assertArrayHasKey('event_force_without_cache', $array);
 
         $this->assertFalse($array['event_integration']);
         $this->assertEquals(['update'], $array['event_operations']);
-        $this->assertEquals(5, $array['event_analysis_limit']);
+        $this->assertTrue($array['event_force_without_cache']);
     }
 
     public function testEventOperationsValidation(): void
