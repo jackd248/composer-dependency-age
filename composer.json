@@ -1,7 +1,7 @@
 {
 	"name": "konradmichalik/composer-dependency-age",
 	"description": "A Composer plugin that analyzes the age of your project dependencies",
-	"license": "MIT",
+	"license": "GPL-3.0-or-later",
 	"type": "composer-plugin",
 	"keywords": [
 		"composer",
