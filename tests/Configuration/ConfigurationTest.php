@@ -48,7 +48,7 @@ final class ConfigurationTest extends TestCase
         $this->assertTrue($config->shouldShowColors());
         $this->assertSame(30, $config->getApiTimeout());
         $this->assertSame(5, $config->getMaxConcurrentRequests());
-        $this->assertSame(86400, $config->getCacheTtl());
+        $this->assertSame(2592000, $config->getCacheTtl());
         $this->assertFalse($config->shouldPerformSecurityChecks());
         $this->assertFalse($config->shouldFailOnCritical());
         $this->assertNull($config->getWhitelistFile());

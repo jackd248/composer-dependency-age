@@ -218,7 +218,7 @@ final class PerformanceOptimizationService
         }
 
         // Enable more aggressive caching
-        $optimizedConfig['cache_ttl'] = max($baseConfig['cache_ttl'] ?? 86400, 7 * 86400); // At least 7 days
+        $optimizedConfig['cache_ttl'] = max($baseConfig['cache_ttl'] ?? 2592000, 7 * 86400); // At least 7 days
 
         // Disable expensive features if needed
         if ($memoryInfo['usage_percentage'] > 80.0) {

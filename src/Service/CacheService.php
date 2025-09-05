@@ -35,7 +35,7 @@ use KonradMichalik\ComposerDependencyAge\Exception\CacheException;
 class CacheService
 {
     private const CACHE_VERSION = '1.0';
-    private const DEFAULT_TTL = 86400; // 24 hours
+    private const DEFAULT_TTL = 2592000; // 30 days
     private const MAX_CACHE_SIZE = 10 * 1024 * 1024; // 10MB
 
     public function __construct(

@@ -94,7 +94,7 @@ Example composer.json configuration:
       "ignore": ["psr/log", "psr/container"],
       "output_format": "cli",
       "include_dev": false,
-      "cache_ttl": 86400
+      "cache_ttl": 2592000
     }
   }
 }</info>
@@ -102,7 +102,7 @@ Example composer.json configuration:
 <comment>Cache Management:</comment>
 The plugin caches Packagist API responses to improve performance:
 • Default cache file: <info>.dependency-age.cache</info>
-• Cache TTL: 24 hours (configurable)
+• Cache TTL: 30 days (configurable)
 • Use <info>--no-cache</info> to disable caching
 • Use <info>--offline</info> for offline mode (cache-only)
 
@@ -118,7 +118,7 @@ The plugin caches Packagist API responses to improve performance:
 
 <comment>Performance Options:</comment>
 • <info>--api-timeout</info>      API request timeout (default: 30 seconds)
-• <info>--cache-ttl</info>        Cache lifetime in seconds (default: 86400)
+• <info>--cache-ttl</info>        Cache lifetime in seconds (default: 2592000)
 • <info>--cache-file</info>       Custom cache file path (default: .dependency-age.cache)
 
 <comment>Integration:</comment>

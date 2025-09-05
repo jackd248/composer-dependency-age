@@ -194,7 +194,7 @@ final class PerformanceOptimizationServiceTest extends TestCase
     {
         $baseConfig = [
             'max_concurrent_requests' => 10,
-            'cache_ttl' => 86400,
+            'cache_ttl' => 2592000,
             'include_dev' => true,
             'security_checks' => true,
         ];
