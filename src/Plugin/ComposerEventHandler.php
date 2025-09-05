@@ -25,10 +25,12 @@ namespace KonradMichalik\ComposerDependencyAge\Plugin;
 
 use Composer\Composer;
 use Composer\IO\IOInterface;
+use DateTimeImmutable;
 use KonradMichalik\ComposerDependencyAge\Api\PackagistClient;
 use KonradMichalik\ComposerDependencyAge\Configuration\Configuration;
 use KonradMichalik\ComposerDependencyAge\Configuration\ConfigurationLoader;
 use KonradMichalik\ComposerDependencyAge\Configuration\WhitelistService;
+use KonradMichalik\ComposerDependencyAge\Model\Package;
 use KonradMichalik\ComposerDependencyAge\Service\AgeCalculationService;
 use KonradMichalik\ComposerDependencyAge\Service\CachePathService;
 use KonradMichalik\ComposerDependencyAge\Service\CacheService;
@@ -67,8 +69,8 @@ final class ComposerEventHandler
         }
 
         try {
-            $summary = $this->performQuickAnalysis();
-            $this->displaySummary($summary, $operation);
+            [$summary, $enrichedPackages] = $this->performQuickAnalysis();
+            $this->displaySummary($summary, $enrichedPackages, $operation);
         } catch (Throwable $e) {
             $this->io->writeError('<warning>Dependency age analysis failed: '.$e->getMessage().'</warning>');
 
@@ -81,7 +83,7 @@ final class ComposerEventHandler
     /**
      * Perform quick dependency analysis optimized for post-operation hooks.
      *
-     * @return array<string, mixed>
+     * @return array{0: array<string, mixed>, 1: array<Package>}
      */
     private function performQuickAnalysis(): array
     {
@@ -116,11 +118,14 @@ final class ComposerEventHandler
 
         if (empty($filteredPackages)) {
             return [
-                'total_packages' => 0,
-                'health_score' => 100.0,
-                'has_critical' => false,
-                'critical_count' => 0,
-                'average_age_formatted' => '0 days',
+                [
+                    'total_packages' => 0,
+                    'health_score' => 100.0,
+                    'has_critical' => false,
+                    'critical_count' => 0,
+                    'average_age_formatted' => '0 days',
+                ],
+                [],
             ];
         }
 
@@ -135,15 +140,15 @@ final class ComposerEventHandler
         $ageStats = $ageCalculationService->calculateStatistics($quickEnrichedPackages);
 
         // Merge summaries
-        return array_merge($ratingSummary, $ageStats);
+        return [array_merge($ratingSummary, $ageStats), $quickEnrichedPackages];
     }
 
     /**
      * Perform quick enrichment prioritizing cached data.
      *
-     * @param array<\KonradMichalik\ComposerDependencyAge\Model\Package> $packages
+     * @param array<Package> $packages
      *
-     * @return array<\KonradMichalik\ComposerDependencyAge\Model\Package>
+     * @return array<Package>
      */
     private function performQuickEnrichment(PackageInfoService $packageInfoService, array $packages): array
     {
@@ -177,8 +182,9 @@ final class ComposerEventHandler
      * Display summary after composer operations.
      *
      * @param array<string, mixed> $summary
+     * @param array<Package>       $enrichedPackages
      */
-    private function displaySummary(array $summary, string $operation): void
+    private function displaySummary(array $summary, array $enrichedPackages, string $operation): void
     {
         $totalPackages = $summary['total_packages'];
         $dominantCategory = $summary['dominant_category'] ?? 'unknown';
@@ -191,8 +197,8 @@ final class ComposerEventHandler
             return;
         }
 
-        // Calculate total age from available data
-        $totalAgeInYears = $this->calculateTotalAgeInYears($summary);
+        // Calculate total age from enriched packages directly (consistent with command)
+        $totalAgeInYears = $this->calculateTotalAgeInYears($enrichedPackages);
         $averageAgeFormatted = $summary['average_age_formatted'] ?? '0 days';
 
         // Use unified overall rating
@@ -280,21 +286,20 @@ final class ComposerEventHandler
     }
 
     /**
-     * Calculate total age in years from summary data.
+     * Calculate total age in years from packages directly (consistent with command calculation).
      *
-     * @param array<string, mixed> $summary
+     * @param array<Package> $packages
      */
-    private function calculateTotalAgeInYears(array $summary): float
+    private function calculateTotalAgeInYears(array $packages, ?DateTimeImmutable $referenceDate = null): float
     {
-        $totalPackages = $summary['total_packages'] ?? 0;
-        $averageAgeDays = $summary['average_age_days'] ?? 0;
+        $totalAgeDays = 0;
 
-        if (0 === $totalPackages || 0 === $averageAgeDays) {
-            return 0.0;
+        foreach ($packages as $package) {
+            $age = $package->getAgeInDays($referenceDate);
+            if (null !== $age) {
+                $totalAgeDays += $age;
+            }
         }
-
-        // Total age = average age * package count, converted to years
-        $totalAgeDays = $averageAgeDays * $totalPackages;
 
         return $totalAgeDays / 365.25; // Account for leap years
     }
