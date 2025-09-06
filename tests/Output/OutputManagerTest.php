@@ -30,6 +30,7 @@ use KonradMichalik\ComposerDependencyAge\Output\OutputManager;
 use KonradMichalik\ComposerDependencyAge\Service\AgeCalculationService;
 use KonradMichalik\ComposerDependencyAge\Service\RatingService;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 
 /**
@@ -64,9 +65,11 @@ final class OutputManagerTest extends TestCase
     {
         $output = new BufferedOutput();
 
+        $input = new ArrayInput([]);
         $this->outputManager->renderCliTable(
             [$this->testPackage],
             $output,
+            $input,
             ['show_colors' => false],
             [],
             $this->referenceDate,
@@ -156,7 +159,8 @@ final class OutputManagerTest extends TestCase
     public function testFormatWithEmptyPackages(): void
     {
         $output = new BufferedOutput();
-        $this->outputManager->renderCliTable([], $output);
+        $input = new ArrayInput([]);
+        $this->outputManager->renderCliTable([], $output, $input);
         $cliOutput = $output->fetch();
         $this->assertStringContainsString('No packages found', $cliOutput);
 
@@ -222,9 +226,11 @@ final class OutputManagerTest extends TestCase
         ];
 
         $output = new BufferedOutput();
+        $input = new ArrayInput([]);
         $this->outputManager->renderCliTable(
             [$this->testPackage],
             $output,
+            $input,
             $options,
             [],
             $this->referenceDate,
@@ -263,7 +269,8 @@ final class OutputManagerTest extends TestCase
 
         // All formats should handle packages without release dates gracefully
         $output = new BufferedOutput();
-        $this->outputManager->renderCliTable([$packageWithoutDate], $output);
+        $input = new ArrayInput([]);
+        $this->outputManager->renderCliTable([$packageWithoutDate], $output, $input);
         $cliOutput = $output->fetch();
         $this->assertIsString($cliOutput);
 

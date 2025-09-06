@@ -173,6 +173,12 @@ class PackageInfoService
         $enrichedPackages = [];
 
         foreach ($packages as $package) {
+            // Skip cache lookup for dev versions as they won't have cached release dates
+            if ($this->isDevVersion($package->version)) {
+                $enrichedPackages[] = $package;
+                continue;
+            }
+
             $cachedData = $this->cacheService->getPackageInfo($package->name, $package->version);
 
             if (null !== $cachedData) {
@@ -220,6 +226,12 @@ class PackageInfoService
         $packagesToFetch = [];
 
         foreach ($packages as $package) {
+            // Skip API calls for dev versions as they don't have release dates on Packagist
+            if ($this->isDevVersion($package->version)) {
+                $cachedPackages[] = $package; // Add without enrichment
+                continue;
+            }
+
             $cachedData = $this->cacheService?->getPackageInfo($package->name, $package->version);
 
             if (null !== $cachedData) {
@@ -272,6 +284,12 @@ class PackageInfoService
         $enrichedPackages = [];
 
         foreach ($packages as $package) {
+            // Skip API calls for dev versions as they don't have release dates on Packagist
+            if ($this->isDevVersion($package->version)) {
+                $enrichedPackages[] = $package; // Add without enrichment
+                continue;
+            }
+
             try {
                 $enrichedPackages[] = $this->enrichPackageWithReleaseInfo($package);
             } catch (PackageInfoException) {
@@ -514,5 +532,18 @@ class PackageInfoService
             'direct' => $directDependencies,
             'dev' => $devDependencies,
         ];
+    }
+
+    /**
+     * Check if a package version is a development version.
+     *
+     * Dev versions (like "dev-main", "1.x-dev", "dev-master") don't have release dates
+     * on Packagist, so we can skip API calls for these to improve performance.
+     */
+    private function isDevVersion(string $version): bool
+    {
+        return str_starts_with($version, 'dev-')
+            || str_ends_with($version, '-dev')
+            || str_contains($version, '.x-dev');
     }
 }

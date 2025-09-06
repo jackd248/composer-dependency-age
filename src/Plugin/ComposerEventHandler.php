@@ -25,6 +25,8 @@ namespace KonradMichalik\ComposerDependencyAge\Plugin;
 
 use Composer\Composer;
 use Composer\IO\IOInterface;
+use ConsoleStyleKit\ConsoleStyleKit;
+use ConsoleStyleKit\Elements\RatingElement;
 use DateTimeImmutable;
 use KonradMichalik\ComposerDependencyAge\Api\PackagistClient;
 use KonradMichalik\ComposerDependencyAge\Configuration\Configuration;
@@ -37,6 +39,7 @@ use KonradMichalik\ComposerDependencyAge\Service\CacheService;
 use KonradMichalik\ComposerDependencyAge\Service\PackageInfoService;
 use KonradMichalik\ComposerDependencyAge\Service\RatingService;
 use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Output\ConsoleOutput;
 use Throwable;
 
 /**
@@ -201,9 +204,8 @@ final class ComposerEventHandler
         $totalAgeInYears = $this->calculateTotalAgeInYears($enrichedPackages);
         $averageAgeFormatted = $summary['average_age_formatted'] ?? '0 days';
 
-        // Use unified overall rating
-        $overallRating = $summary['overall_rating'] ?? '?';
-        $ratingSymbol = $this->getRatingSymbol($overallRating);
+        // Use unified overall rating with ConsoleStyleKit
+        $ratingSymbol = $this->getRatingSymbolFromSummary($summary);
 
         // Simplified summary format
         $this->io->write(sprintf(
@@ -215,19 +217,37 @@ final class ComposerEventHandler
     }
 
     /**
-     * Get rating symbol from overall rating string.
+     * Get rating symbol from summary data using ConsoleStyleKit if possible, fallback to text.
+     *
+     * @param array<string, mixed> $summary
      */
-    private function getRatingSymbol(string $overallRating): string
+    private function getRatingSymbolFromSummary(array $summary): string
     {
-        if (str_contains($overallRating, '✓')) {
-            return '<fg=green>✓</fg=green>';
-        } elseif (str_contains($overallRating, '~')) {
-            return '<fg=yellow>~</fg=yellow>';
-        } elseif (str_contains($overallRating, '!')) {
-            return '<fg=red>!</fg=red>';
+        $percentages = $summary['percentages'] ?? [];
+        $currentPercent = $percentages['current'] ?? 0;
+        $oldPercent = $percentages['old'] ?? 0;
+
+        // Determine rating level
+        $currentRating = 0;
+        if ($currentPercent >= 70) {
+            $currentRating = 3; // Mostly current
+        } elseif ($oldPercent >= 30) {
+            $currentRating = 1; // Needs attention
         } else {
-            return '<fg=gray>?</fg=gray>';
+            $currentRating = 2; // Moderately current
         }
+
+        // If no known packages, show empty rating
+        $knownPackages = ($summary['distribution']['current'] ?? 0) +
+                        ($summary['distribution']['medium'] ?? 0) +
+                        ($summary['distribution']['old'] ?? 0);
+
+        if (0 === $knownPackages) {
+            $currentRating = 0;
+        }
+        $style = new ConsoleStyleKit(new ArrayInput([]), new ConsoleOutput());
+
+        return RatingElement::circle($style, 3, $currentRating, true)->__toString();
     }
 
     /**

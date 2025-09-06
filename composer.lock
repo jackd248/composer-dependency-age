@@ -4,8 +4,62 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0280d490abe36b2409f02fcc5821a80d",
+    "content-hash": "83a2816f8000d590df2f418ebd6d81a8",
     "packages": [
+        {
+            "name": "konradmichalik/console-style-kit",
+            "version": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/jackd248/console-style-kit.git",
+                "reference": "81bc74a0c76766a4547a10fdb578e46295bef65a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/jackd248/console-style-kit/zipball/81bc74a0c76766a4547a10fdb578e46295bef65a",
+                "reference": "81bc74a0c76766a4547a10fdb578e46295bef65a",
+                "shasum": ""
+            },
+            "require": {
+                "php": "~8.1.0 || ~8.2.0 || ~8.3.0 || ~8.4.0",
+                "symfony/console": "^5.0 || ^6.0 || ^7.0"
+            },
+            "require-dev": {
+                "armin/editorconfig-cli": "^1.0 || ^2.0",
+                "eliashaeussler/php-cs-fixer-config": "2.3.0",
+                "eliashaeussler/rector-config": "^3.0",
+                "ergebnis/composer-normalize": "^2.44",
+                "konradmichalik/php-doc-block-header-fixer": "^0.2",
+                "phpstan/phpstan": "^2.0",
+                "phpstan/phpstan-phpunit": "^2.0",
+                "phpstan/phpstan-symfony": "^2.0",
+                "phpunit/phpunit": "^10.2 || ^11.0 || ^12.0",
+                "roave/security-advisories": "dev-latest"
+            },
+            "default-branch": true,
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "ConsoleStyleKit\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "GPL-3.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "Konrad Michalik",
+                    "email": "konrad@michalik.dev"
+                }
+            ],
+            "description": "Symfony Console Style Helper Extensions",
+            "support": {
+                "issues": "https://github.com/jackd248/console-style-kit/issues",
+                "source": "https://github.com/jackd248/console-style-kit/tree/main"
+            },
+            "time": "2025-09-05T19:20:35+00:00"
+        },
         {
             "name": "psr/container",
             "version": "2.0.2",
@@ -4067,16 +4121,16 @@
         },
         {
             "name": "rector/rector",
-            "version": "2.1.5",
+            "version": "2.1.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/rectorphp/rector.git",
-                "reference": "1cd6abfb5976fd4ed728d5b73ebd67c7c810cd88"
+                "reference": "729aabc0ec66e700ef164e26454a1357f222a2f3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/rectorphp/rector/zipball/1cd6abfb5976fd4ed728d5b73ebd67c7c810cd88",
-                "reference": "1cd6abfb5976fd4ed728d5b73ebd67c7c810cd88",
+                "url": "https://api.github.com/repos/rectorphp/rector/zipball/729aabc0ec66e700ef164e26454a1357f222a2f3",
+                "reference": "729aabc0ec66e700ef164e26454a1357f222a2f3",
                 "shasum": ""
             },
             "require": {
@@ -4115,7 +4169,7 @@
             ],
             "support": {
                 "issues": "https://github.com/rectorphp/rector/issues",
-                "source": "https://github.com/rectorphp/rector/tree/2.1.5"
+                "source": "https://github.com/rectorphp/rector/tree/2.1.6"
             },
             "funding": [
                 {
@@ -4123,7 +4177,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-09-04T14:19:07+00:00"
+            "time": "2025-09-05T15:43:08+00:00"
         },
         {
             "name": "roave/security-advisories",
@@ -4131,12 +4185,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/Roave/SecurityAdvisories.git",
-                "reference": "3602c597d29de335a36c0b50b96cc161d853b54f"
+                "reference": "dc5c4ede5c331ae21fb68947ff89672df9b7cc7d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Roave/SecurityAdvisories/zipball/3602c597d29de335a36c0b50b96cc161d853b54f",
-                "reference": "3602c597d29de335a36c0b50b96cc161d853b54f",
+                "url": "https://api.github.com/repos/Roave/SecurityAdvisories/zipball/dc5c4ede5c331ae21fb68947ff89672df9b7cc7d",
+                "reference": "dc5c4ede5c331ae21fb68947ff89672df9b7cc7d",
                 "shasum": ""
             },
             "conflict": {
@@ -4714,7 +4768,7 @@
                 "prestashop/blockwishlist": ">=2,<2.1.1",
                 "prestashop/contactform": ">=1.0.1,<4.3",
                 "prestashop/gamification": "<2.3.2",
-                "prestashop/prestashop": "<8.1.6",
+                "prestashop/prestashop": "<8.2.3",
                 "prestashop/productcomments": "<5.0.2",
                 "prestashop/ps_contactinfo": "<=3.3.2",
                 "prestashop/ps_emailsubscription": "<2.6.1",
@@ -5088,7 +5142,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-09-03T23:04:57+00:00"
+            "time": "2025-09-04T20:05:35+00:00"
         },
         {
             "name": "sebastian/cli-parser",
@@ -7157,6 +7211,7 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
+        "konradmichalik/console-style-kit": 20,
         "roave/security-advisories": 20
     },
     "prefer-stable": true,

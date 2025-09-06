@@ -21,9 +21,32 @@ declare(strict_types=1);
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+declare(ticks=1);
+
+/*
+ * This file is part of the Composer plugin "composer-dependency-age".
+ *
+ * Copyright (C) 2025 Konrad Michalik <hej@konradmichalik.dev>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
 namespace KonradMichalik\ComposerDependencyAge\Command;
 
 use Composer\Command\BaseCommand;
+use ConsoleStyleKit\ConsoleStyleKit;
+use ConsoleStyleKit\Enums\BlockquoteType;
 use KonradMichalik\ComposerDependencyAge\Api\PackagistClient;
 use KonradMichalik\ComposerDependencyAge\Configuration\ConfigurationLoader;
 use KonradMichalik\ComposerDependencyAge\Configuration\WhitelistService;
@@ -206,10 +229,12 @@ HELP
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         // Display header as specified in requirements
-        $this->displayHeader($output);
+        $style = new ConsoleStyleKit($input, $output);
+        $this->displayHeader($style, $output);
 
-        $output->writeln('');
-        $output->writeln('<fg=gray>Analyzing dependency ages...</>');
+        $loading = $style->loading('Analyzing dependency ages', color: '#9C5B61')
+            ->enableAutoUpdate()
+            ->start();
 
         try {
             $composer = $this->requireComposer();
@@ -301,7 +326,8 @@ HELP
                 return self::SUCCESS;
             }
 
-            $output->writeln(sprintf('<info>Found %d packages to analyze.</info>', count($filteredPackages)));
+            $loading->stop();
+            $output->writeln(sprintf('Found %d packages to analyze.', count($filteredPackages)));
 
             // Fetch package information with progress
             $enrichedPackages = $packageInfoService->enrichPackagesWithReleaseInfo($filteredPackages);
@@ -313,7 +339,7 @@ HELP
 
             // Use different rendering for CLI format
             if ('cli' === $format) {
-                $outputManager->renderCliTable($enrichedPackages, $output, [
+                $outputManager->renderCliTable($enrichedPackages, $output, $input, [
                     'show_colors' => $showColors,
                     'direct_mode_active' => $input->getOption('direct'),
                 ], $thresholds);
@@ -338,14 +364,13 @@ HELP
     /**
      * Display command header as specified in requirements.
      */
-    private function displayHeader(OutputInterface $output): void
+    private function displayHeader(ConsoleStyleKit $style, OutputInterface $output): void
     {
-        $output->writeln('');
-        $output->writeln('<comment>Composer Dependency Age</comment>');
-        $output->writeln('<comment>===================================</comment>');
-        $output->writeln('');
+        $style->title('Composer Dependency Age');
         $output->writeln(' A Composer plugin for neutral analysis of your project dependencies\' age.');
-        $output->writeln('');
-        $output->writeln(' For more information: <fg=cyan>composer dependency-age --verbose</>');
+        $style->blockquote("Understanding the age of your dependencies is crucial for maintaining a healthy codebase.\n While newer isn't always better, knowing when your dependencies were last updated helps you make informed decisions about maintenance, security planning, and technical debt management.\nThis tool provides objective age categorization without making assumptions about what you should do - empowering you to prioritize updates based on your project's specific needs, risk tolerance and maintenance windows.", BlockquoteType::INFO->value, verboseOnly: true);
+        if (!$style->isVerbose()) {
+            $style->blockquote('For more information: <fg=cyan>composer dependency-age --verbose</>', BlockquoteType::TIP->value);
+        }
     }
 }

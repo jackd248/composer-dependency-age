@@ -31,6 +31,7 @@ use KonradMichalik\ComposerDependencyAge\Output\TableRenderer;
 use KonradMichalik\ComposerDependencyAge\Service\AgeCalculationService;
 use KonradMichalik\ComposerDependencyAge\Service\RatingService;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 
 /**
@@ -55,7 +56,8 @@ final class TableRendererTest extends TestCase
     public function testRenderTableWithEmptyPackages(): void
     {
         $output = new BufferedOutput();
-        $this->renderer->renderTable([], $output);
+        $input = new ArrayInput([]);
+        $this->renderer->renderTable([], $output, $input);
         $result = $output->fetch();
 
         $this->assertStringContainsString('No packages found', $result);
@@ -74,7 +76,8 @@ final class TableRendererTest extends TestCase
         );
 
         $output = new BufferedOutput();
-        $this->renderer->renderTable([$package], $output, [
+        $input = new ArrayInput([]);
+        $this->renderer->renderTable([$package], $output, $input, [
             'reference_date' => $referenceDate,
             'show_colors' => false,
         ], [], $referenceDate);
@@ -123,7 +126,8 @@ final class TableRendererTest extends TestCase
         ];
 
         $output = new BufferedOutput();
-        $this->renderer->renderTable($packages, $output, [
+        $input = new ArrayInput([]);
+        $this->renderer->renderTable($packages, $output, $input, [
             'reference_date' => $referenceDate,
             'show_colors' => false,
         ]);
@@ -133,10 +137,10 @@ final class TableRendererTest extends TestCase
         $this->assertStringContainsString('psr/log', $result);
         $this->assertStringContainsString('guzzle/http', $result);
 
-        // Check ratings
-        $this->assertStringContainsString('~', $result); // Medium age rating symbol // doctrine/orm
-        $this->assertStringContainsString('!', $result); // Critical age rating symbol // psr/log
-        $this->assertStringContainsString('✓', $result); // Current age rating symbol // guzzle/http
+        // Check ratings - now using rating elements instead of text symbols
+        $this->assertStringContainsString('● ● ○', $result); // Medium age rating // doctrine/orm
+        $this->assertStringContainsString('● ○ ○', $result); // Critical age rating // psr/log
+        $this->assertStringContainsString('● ● ●', $result); // Current age rating // guzzle/http
 
         // Check that table includes all package data (now with legend and summary too)
         $lines = explode("\n", $result);
@@ -154,16 +158,17 @@ final class TableRendererTest extends TestCase
         );
 
         $output = new BufferedOutput();
-        $this->renderer->renderTable([$package], $output, [
+        $input = new ArrayInput([]);
+        $this->renderer->renderTable([$package], $output, $input, [
             'columns' => ['package', 'version', 'dev'],
             'reference_date' => $referenceDate,
             'show_colors' => false,
         ]);
         $result = $output->fetch();
 
-        $this->assertStringContainsString('Package Name', $result);
-        $this->assertStringContainsString('Installed Version', $result);
-        $this->assertStringContainsString('Dev Dependency', $result);
+        $this->assertStringContainsString('Package', $result);
+        $this->assertStringContainsString('Version', $result);
+        $this->assertStringContainsString('Dev', $result);
         $this->assertStringContainsString('test/package', $result);
         $this->assertStringContainsString('1.0.0', $result);
         $this->assertStringContainsString('Yes', $result);
@@ -187,7 +192,8 @@ final class TableRendererTest extends TestCase
         );
 
         $output = new BufferedOutput();
-        $this->renderer->renderTable([$package], $output, [
+        $input = new ArrayInput([]);
+        $this->renderer->renderTable([$package], $output, $input, [
             'reference_date' => $referenceDate,
             'show_colors' => true,
         ]);
@@ -213,7 +219,8 @@ final class TableRendererTest extends TestCase
         );
 
         $output = new BufferedOutput();
-        $this->renderer->renderTable([$package], $output, [
+        $input = new ArrayInput([]);
+        $this->renderer->renderTable([$package], $output, $input, [
             'reference_date' => $referenceDate,
             'show_colors' => false,
         ]);
@@ -227,7 +234,7 @@ final class TableRendererTest extends TestCase
     {
         $columns = $this->renderer->getDefaultColumns();
 
-        $expectedColumns = ['package', 'version', 'type', 'age', 'rating', 'latest', 'impact'];
+        $expectedColumns = ['package', 'version', 'age', 'rating', 'latest'];
         $this->assertSame($expectedColumns, $columns);
     }
 
@@ -236,14 +243,15 @@ final class TableRendererTest extends TestCase
         $package = new Package('unknown/package', '1.0.0'); // No release date
 
         $output = new BufferedOutput();
-        $this->renderer->renderTable([$package], $output, [
+        $input = new ArrayInput([]);
+        $this->renderer->renderTable([$package], $output, $input, [
             'show_colors' => false,
         ]);
         $result = $output->fetch();
 
         $this->assertStringContainsString('unknown/package', $result);
         $this->assertStringContainsString('Unknown', $result);
-        $this->assertStringContainsString('?', $result); // Unknown age rating symbol
+        $this->assertStringContainsString('○ ○ ○', $result); // Unknown age rating
     }
 
     public function testRenderTableWithCustomThresholds(): void
@@ -260,7 +268,8 @@ final class TableRendererTest extends TestCase
         $customThresholds = ['current' => 30, 'medium' => 90];
 
         $output = new BufferedOutput();
-        $this->renderer->renderTable([$package], $output, [
+        $input = new ArrayInput([]);
+        $this->renderer->renderTable([$package], $output, $input, [
             'thresholds' => $customThresholds,
             'reference_date' => $referenceDate,
             'show_colors' => false,
@@ -268,7 +277,7 @@ final class TableRendererTest extends TestCase
         $result = $output->fetch();
 
         // With custom thresholds, 2 months (~60 days) should be yellow
-        $this->assertStringContainsString('~', $result); // Medium age rating symbol
+        $this->assertStringContainsString('● ● ○', $result); // Medium age rating
     }
 
     public function testNotesFormatting(): void
@@ -285,14 +294,15 @@ final class TableRendererTest extends TestCase
         );
 
         $output = new BufferedOutput();
-        $this->renderer->renderTable([$devPackage], $output, [
+        $input = new ArrayInput([]);
+        $this->renderer->renderTable([$devPackage], $output, $input, [
             'reference_date' => $referenceDate,
             'show_colors' => false,
         ]);
         $result = $output->fetch();
 
         $this->assertStringContainsString('*~', $result); // Should show dev dependency symbol in Type column
-        $this->assertStringContainsString('!', $result); // Should show critical rating symbol
+        $this->assertStringContainsString('● ○ ○', $result); // Should show critical rating
         $this->assertStringContainsString('2.0.0', $result); // Should show latest version (indicates update available)
     }
 
@@ -304,7 +314,8 @@ final class TableRendererTest extends TestCase
     public function testColumnWidthCalculation(array $packages, array $columns, string $expectedContent): void
     {
         $output = new BufferedOutput();
-        $this->renderer->renderTable($packages, $output, [
+        $input = new ArrayInput([]);
+        $this->renderer->renderTable($packages, $output, $input, [
             'columns' => $columns,
             'show_colors' => false,
         ]);
@@ -323,7 +334,7 @@ final class TableRendererTest extends TestCase
         yield 'short content' => [
             [new Package('a', 'v1')],
             ['package', 'version'],
-            'Package Name',
+            'Package',
         ];
         yield 'long content' => [
             [new Package('very-long-package-name-for-testing-column-width-calculation', 'v1.0.0-beta-release')],
@@ -341,7 +352,8 @@ final class TableRendererTest extends TestCase
         ];
 
         $output = new BufferedOutput();
-        $this->renderer->renderTable($packages, $output, [
+        $input = new ArrayInput([]);
+        $this->renderer->renderTable($packages, $output, $input, [
             'reference_date' => $referenceDate,
             'show_colors' => false,
         ]);
@@ -353,7 +365,7 @@ final class TableRendererTest extends TestCase
         $this->assertGreaterThan(20, count($lines));
 
         // Header should be somewhere in the output
-        $this->assertStringContainsString('Package Name', $result);
+        $this->assertStringContainsString('Package', $result);
 
         // Table should have proper structure - separators and data
         $this->assertStringContainsString('+---', $result); // Table borders
@@ -375,7 +387,8 @@ final class TableRendererTest extends TestCase
         );
 
         $output = new BufferedOutput();
-        $renderer->renderTable([$package], $output, [
+        $input = new ArrayInput([]);
+        $renderer->renderTable([$package], $output, $input, [
             'reference_date' => $referenceDate,
             'show_colors' => true,
         ]);
@@ -384,8 +397,8 @@ final class TableRendererTest extends TestCase
         // Verify table renders correctly with colors enabled
         $this->assertStringContainsString('test/package', $result);
 
-        // Should have rating symbol (✓ for current packages)
-        $this->assertStringContainsString('✓', $result);
+        // Should have rating symbol (● ● ● for current packages)
+        $this->assertStringContainsString('● ● ●', $result);
 
         // Color formatting testing is environment-dependent
         $this->addToAssertionCount(1); // Mark as tested

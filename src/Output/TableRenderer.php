@@ -23,11 +23,15 @@ declare(strict_types=1);
 
 namespace KonradMichalik\ComposerDependencyAge\Output;
 
+use ConsoleStyleKit\ConsoleStyleKit;
+use ConsoleStyleKit\Elements\RatingElement;
+use ConsoleStyleKit\Enums\BlockquoteType;
 use DateTimeImmutable;
 use KonradMichalik\ComposerDependencyAge\Model\Package;
 use KonradMichalik\ComposerDependencyAge\Service\AgeCalculationService;
 use KonradMichalik\ComposerDependencyAge\Service\RatingService;
 use Symfony\Component\Console\Helper\Table;
+use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -53,6 +57,7 @@ class TableRenderer
     public function renderTable(
         array $packages,
         OutputInterface $output,
+        InputInterface $input,
         array $options = [],
         array $thresholds = [],
         ?DateTimeImmutable $referenceDate = null,
@@ -78,7 +83,7 @@ class TableRenderer
             $rating = $this->ratingService->ratePackage($package, $thresholds, $referenceDate);
             $detailed = $this->ratingService->getDetailedRating($package, $thresholds, $referenceDate);
 
-            $row = $this->formatTableRow($package, $rating, $detailed, $columns);
+            $row = $this->formatTableRow($package, $rating, $detailed, $columns, new ConsoleStyleKit($input, $output));
             $table->addRow($row);
         }
 
@@ -86,17 +91,17 @@ class TableRenderer
         $table->addRow(new \Symfony\Component\Console\Helper\TableSeparator());
 
         // Add summary row
-        $summaryRow = $this->formatSummaryRow($sortedPackages, $columns, $thresholds, $referenceDate);
+        $summaryRow = $this->formatSummaryRow($sortedPackages, $columns, $thresholds, $referenceDate, new ConsoleStyleKit($input, $output));
         $table->addRow($summaryRow);
 
         $table->render();
 
         // Show legend after table
-        $this->renderLegend($output);
+        $this->renderLegend($input, $output);
 
         // Show summary
         $directModeActive = $options['direct_mode_active'] ?? false;
-        $this->renderSummary($packages, $output, $thresholds, $referenceDate, $directModeActive);
+        $this->renderSummary($packages, $output, $input, $thresholds, $referenceDate, $directModeActive);
     }
 
     /**
@@ -106,7 +111,7 @@ class TableRenderer
      */
     public function getDefaultColumns(): array
     {
-        return ['package', 'version', 'type', 'age', 'rating', 'latest', 'impact'];
+        return ['package', 'version', 'age', 'rating', 'latest'];
     }
 
     /**
@@ -119,15 +124,11 @@ class TableRenderer
     private function getColumnHeaders(array $columns): array
     {
         $headerMap = [
-            'package' => 'Package Name',
-            'version' => 'Installed Version',
-            'type' => 'Type',
+            'package' => 'Package',
+            'version' => 'Version',
             'age' => 'Age',
             'rating' => 'Rating',
-            'latest' => 'Latest Version',
-            'impact' => 'Update Impact',
-            'notes' => 'Notes',
-            'dev' => 'Dev Dependency',
+            'latest' => 'Latest',
         ];
 
         return array_map(fn ($col) => $headerMap[$col] ?? ucfirst($col), $columns);
@@ -142,21 +143,18 @@ class TableRenderer
      *
      * @return array<string>
      */
-    private function formatTableRow(Package $package, array $rating, array $detailed, array $columns): array
+    private function formatTableRow(Package $package, array $rating, array $detailed, array $columns, ?ConsoleStyleKit $style = null): array
     {
         $row = [];
 
         foreach ($columns as $column) {
             $row[] = match ($column) {
-                'package' => $package->name,
+                'package' => sprintf('%s (%s)', $package->name, $this->formatDependencyType($package)),
                 'version' => $package->version,
-                'type' => $this->formatDependencyType($package),
                 'age' => $rating['age_formatted'] ?? 'Unknown',
-                'rating' => $this->formatRating($rating),
-                'latest' => $this->formatLatestVersion($package, $detailed),
-                'impact' => $this->formatImpact($package, $detailed),
-                'notes' => $this->formatNotes($package, $detailed),
-                'dev' => $package->isDev ? 'Yes' : 'No',
+                'rating' => $this->formatRating($rating, $style),
+                'latest' => $this->formatLatestVersion($package, $detailed) ?: '',
+                'dev' => $package->isDev ? 'Yes' : '',
                 default => '',
             };
         }
@@ -173,23 +171,17 @@ class TableRenderer
      *
      * @return array<string>
      */
-    private function formatSummaryRow(array $packages, array $columns, array $thresholds = [], ?DateTimeImmutable $referenceDate = null): array
+    private function formatSummaryRow(array $packages, array $columns, array $thresholds = [], ?DateTimeImmutable $referenceDate = null, ?ConsoleStyleKit $style = null): array
     {
         $row = [];
         $totalAge = $this->formatTotalPackageAge($packages, $referenceDate);
-        $overallRating = $this->getOverallRating($packages, $thresholds, $referenceDate);
+        $overallRating = $this->getOverallRating($packages, $thresholds, $referenceDate, $style);
 
         foreach ($columns as $column) {
             $row[] = match ($column) {
-                'package' => '∑', // Sum symbol
-                'version' => '',
-                'type' => '',
+                'package' => '∑',
                 'age' => '<options=bold>'.$totalAge.'</options=bold>',
                 'rating' => $overallRating,
-                'latest' => '',
-                'impact' => '',
-                'notes' => '',
-                'dev' => '',
                 default => '',
             };
         }
@@ -202,18 +194,29 @@ class TableRenderer
      *
      * @param array<string, mixed> $rating
      */
-    private function formatRating(array $rating): string
+    private function formatRating(array $rating, ?ConsoleStyleKit $style = null): string
     {
-        if ('unknown' === $rating['category']) {
-            return '<fg=gray>?</fg=gray>';
+        if (null === $style) {
+            return match ($rating['category']) {
+                'current' => '<fg=green>✓</fg=green>',
+                'medium' => '<fg=yellow>~</fg=yellow>',
+                'old' => '<fg=red>!</fg=red>',
+                'unknown' => '<fg=gray>?</fg=gray>',
+                default => '<fg=gray>?</fg=gray>',
+            };
         }
 
-        return match ($rating['category']) {
-            'current' => '<fg=green>✓</fg=green>',
-            'medium' => '<fg=yellow>~</fg=yellow>',
-            'old' => '<fg=red>!</fg=red>',
-            default => '<fg=gray>?</fg=gray>',
+        // Use ConsoleStyleKit rating system
+        $maxRating = 3;
+        $currentRating = match ($rating['category']) {
+            'current' => 3,  // Best rating
+            'medium' => 2,   // Medium rating
+            'old' => 1,      // Poor rating
+            'unknown' => 0,  // Unknown - shows as 0 of 3
+            default => 0,    // Unknown - shows as 0 of 3
         };
+
+        return RatingElement::circle($style, $maxRating, $currentRating, true)->__toString();
     }
 
     /**
@@ -222,14 +225,18 @@ class TableRenderer
     private function formatDependencyType(Package $package): string
     {
         if ($package->isDev && $package->isDirect) {
-            return '<fg=magenta>*</fg=magenta>';
-        } elseif ($package->isDev && !$package->isDirect) {
-            return '<fg=magenta>*</fg=magenta><fg=white>~</fg=white>';
-        } elseif ($package->isDirect) {
-            return '<fg=cyan>→</fg=cyan>';
-        } else {
-            return '<fg=white>~</fg=white>';
+            return '<fg=magenta>*</>';
         }
+
+        if ($package->isDev && !$package->isDirect) {
+            return '<fg=magenta>*</><fg=white>~</>';
+        }
+
+        if ($package->isDirect) {
+            return '<fg=cyan>→</>';
+        }
+
+        return '<fg=yellow>~</>';
     }
 
     /**
@@ -258,7 +265,7 @@ class TableRenderer
             return '';
         }
 
-        return $latestVersion;
+        return sprintf('%s (%s)', $latestVersion, $this->formatImpact($package, $detailed));
     }
 
     /**
@@ -292,30 +299,6 @@ class TableRenderer
         }
 
         return '-'.$reduction['formatted'];
-    }
-
-    /**
-     * Format notes column.
-     *
-     * @param array<string, mixed> $detailed
-     */
-    private function formatNotes(Package $package, array $detailed): string
-    {
-        $notes = [];
-
-        if ($package->isDev) {
-            $notes[] = 'Dev';
-        }
-
-        // Only show "Update available" if there's actually a newer version
-        $latestVersion = $detailed['latest_info']['version'] ?? null;
-        if (null !== $latestVersion
-            && $latestVersion !== $package->version
-            && version_compare($this->normalizeVersion($latestVersion), $this->normalizeVersion($package->version), '>')) {
-            $notes[] = 'Update available';
-        }
-
-        return empty($notes) ? '' : implode(', ', $notes);
     }
 
     /**
@@ -410,12 +393,17 @@ class TableRenderer
     /**
      * Render legend for symbols used in the table.
      */
-    private function renderLegend(OutputInterface $output): void
+    private function renderLegend(InputInterface $input, OutputInterface $output): void
     {
-        $output->writeln('Legend:');
-        $output->writeln('- Rating: <fg=green>✓</fg=green> mostly current, <fg=yellow>~</fg=yellow> moderately current, <fg=red>!</fg=red> chronologically old, <fg=gray>?</fg=gray> unknown');
-        $output->writeln('- Type: → direct dependency, ~ indirect dependency, * dev dependency');
-        $output->writeln('');
+        $style = new ConsoleStyleKit($input, $output);
+        if (!$style->isVerbose()) {
+            return;
+        }
+
+        $style->newLine();
+        $output->writeln('<options=bold>Legend</>');
+        $output->writeln('- Rating: '.RatingElement::circle($style, 3, 3, colorful: true)->__toString().'  mostly current, '.RatingElement::circle($style, 3, 2, colorful: true)->__toString().' moderately current, '.RatingElement::circle($style, 3, 1, colorful: true)->__toString().' chronologically old, '.RatingElement::circle($style, 3, 0, colorful: true)->__toString().' unknown');
+        $output->writeln('- Type: <fg=cyan>→</> direct dependency, <fg=yellow>~</> indirect dependency, <fg=magenta>*</> dev dependency');
     }
 
     /**
@@ -424,26 +412,34 @@ class TableRenderer
      * @param array<Package>       $packages
      * @param array<string, float> $thresholds
      */
-    private function renderSummary(array $packages, OutputInterface $output, array $thresholds = [], ?DateTimeImmutable $referenceDate = null, bool $directModeActive = false): void
+    private function renderSummary(array $packages, OutputInterface $output, InputInterface $input, array $thresholds = [], ?DateTimeImmutable $referenceDate = null, bool $directModeActive = false): void
     {
         if (empty($packages)) {
             return;
         }
 
+        $style = new ConsoleStyleKit($input, $output);
+
+        if (!$directModeActive) {
+            $style->blockquote("By default, all composer dependencies are shown. For a focused analysis on direct dependencies only, use the <fg=cyan>`composer dependency-age --direct`</fg=cyan> option.\nFocusing on direct dependencies gives a clearer picture of your project's core dependency health.", BlockquoteType::IMPORTANT->value);
+        }
+
+        if ($output->isVerbose()) {
+            $this->renderDevPackageExplanation($packages, $style);
+        }
+
         $statistics = $this->ageCalculationService->calculateStatistics($packages, $referenceDate);
 
-        $output->writeln('<info>Summary (*)</info>');
-        $output->writeln('<info>---------------------</info>');
-        $output->writeln('');
+        $style->section('Summary');
 
         $summaryTable = new Table($output);
         $summaryTable->setHeaders(['Metric', 'Value']);
 
         $totalAge = $this->formatTotalPackageAge($packages, $referenceDate);
         $averageAge = $statistics['average_age_formatted'] ?? 'Unknown';
-        $packageCounts = $this->getPackageCounts($packages, $thresholds, $referenceDate);
+        $packageCounts = count($packages);
         $updateImpact = $this->formatTotalUpdateImpact($statistics);
-        $overallRating = $this->getOverallRating($packages, $thresholds, $referenceDate);
+        $overallRating = $this->getOverallRating($packages, $thresholds, $referenceDate, $style);
 
         $summaryTable->addRow(['Total Age', '<options=bold>'.$totalAge.'</options=bold>']);
         $summaryTable->addRow(['Average Age', $averageAge]);
@@ -462,36 +458,6 @@ class TableRenderer
         if ($output->isVerbose()) {
             $this->renderVerboseRatingExplanation($packages, $output, $thresholds, $referenceDate);
         }
-
-        if (!$directModeActive) {
-            $output->writeln('');
-            $output->writeln('* By default, all composer dependencies are shown. For a focused analysis on direct dependencies only, use the <fg=cyan>`--direct`</fg=cyan> option.');
-            $output->writeln('Focusing on direct dependencies gives a clearer picture of your project\'s core dependency health.*');
-        }
-    }
-
-    /**
-     * Get package counts by rating category.
-     *
-     * @param array<Package>       $packages
-     * @param array<string, float> $thresholds
-     */
-    private function getPackageCounts(array $packages, array $thresholds = [], ?DateTimeImmutable $referenceDate = null): string
-    {
-        $counts = ['current' => 0, 'medium' => 0, 'old' => 0, 'unknown' => 0];
-
-        foreach ($packages as $package) {
-            $rating = $this->ratingService->ratePackage($package, $thresholds, $referenceDate);
-            $category = $rating['category'] ?? 'unknown';
-            ++$counts[$category];
-        }
-
-        $total = count($packages);
-        $current = $counts['current'];
-        $medium = $counts['medium'];
-        $old = $counts['old'];
-
-        return sprintf('%d Packages (%d <fg=green>✓</fg=green>, %d <fg=yellow>~</fg=yellow>, %d <fg=red>!</fg=red>)', $total, $current, $medium, $old);
     }
 
     /**
@@ -500,15 +466,37 @@ class TableRenderer
      * @param array<Package>       $packages
      * @param array<string, float> $thresholds
      */
-    private function getOverallRating(array $packages, array $thresholds = [], ?DateTimeImmutable $referenceDate = null): string
+    private function getOverallRating(array $packages, array $thresholds = [], ?DateTimeImmutable $referenceDate = null, ?ConsoleStyleKit $style = null): string
     {
+        $maxRating = 3;
+
         if (empty($packages)) {
-            return '<fg=gray>?</fg=gray> unknown';
+            if (null === $style) {
+                return '<fg=gray>?</fg=gray> unknown';
+            }
+
+            return RatingElement::circle($style, 3, 0, true)->__toString();
         }
 
         $summary = $this->ratingService->getRatingSummary($packages, $thresholds, $referenceDate);
 
-        return $summary['overall_rating'] ?? '<fg=gray>?</fg=gray> unknown';
+        if (null === $style) {
+            // Fallback to text rating for non-style contexts
+            return $summary['overall_rating'] ?? '<fg=gray>?</fg=gray> unknown';
+        }
+        $percentages = $summary['percentages'] ?? [];
+        $currentPercent = $percentages['current'] ?? 0;
+        $oldPercent = $percentages['old'] ?? 0;
+
+        if ($currentPercent >= 70) {
+            $currentRating = 3; // Mostly current
+        } elseif ($oldPercent >= 30) {
+            $currentRating = 1; // Needs attention
+        } else {
+            $currentRating = 2; // Moderately current
+        }
+
+        return RatingElement::circle($style, $maxRating, $currentRating, true)->__toString();
     }
 
     /**
@@ -557,5 +545,48 @@ class TableRenderer
         } else {
             $output->writeln(sprintf('  → <fg=yellow>~ Moderately Current</fg=yellow>: %.1f%% current < 70%% AND %.1f%% old < 30%%', $currentPercent, $oldPercent));
         }
+    }
+
+    /**
+     * Render explanation for development packages if present.
+     *
+     * @param array<Package> $packages
+     */
+    private function renderDevPackageExplanation(array $packages, ConsoleStyleKit $style): void
+    {
+        $devVersionPackages = [];
+
+        foreach ($packages as $package) {
+            if ($this->isDevVersion($package->version)) {
+                $devVersionPackages[] = $package;
+            }
+        }
+
+        if (empty($devVersionPackages)) {
+            return;
+        }
+
+        $count = count($devVersionPackages);
+        $total = count($packages);
+        $percentage = round(($count / $total) * 100, 1);
+
+        $message = sprintf(
+            "%d of %d packages (%.1f%%) use development versions (e.g., dev-main, 1.x-dev) that don't have fixed release dates. These packages are marked as 'unknown' in the rating and are excluded from the overall project rating calculation. Development versions track the latest code changes but cannot be aged-analyzed since they don't have stable release timestamps.",
+            $count,
+            $total,
+            $percentage,
+        );
+
+        $style->blockquote($message, BlockquoteType::TIP->value);
+    }
+
+    /**
+     * Check if a package version is a development version.
+     */
+    private function isDevVersion(string $version): bool
+    {
+        return str_starts_with($version, 'dev-')
+            || str_ends_with($version, '-dev')
+            || str_contains($version, '.x-dev');
     }
 }

@@ -28,6 +28,7 @@ use InvalidArgumentException;
 use KonradMichalik\ComposerDependencyAge\Model\Package;
 use KonradMichalik\ComposerDependencyAge\Service\AgeCalculationService;
 use KonradMichalik\ComposerDependencyAge\Service\RatingService;
+use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -82,11 +83,12 @@ final class OutputManager
     public function renderCliTable(
         array $packages,
         OutputInterface $output,
+        InputInterface $input,
         array $options = [],
         array $thresholds = [],
         ?DateTimeImmutable $referenceDate = null,
     ): void {
-        $this->tableRenderer->renderTable($packages, $output, $options, $thresholds, $referenceDate);
+        $this->tableRenderer->renderTable($packages, $output, $input, $options, $thresholds, $referenceDate);
     }
 
     /**

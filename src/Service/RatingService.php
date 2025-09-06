@@ -193,39 +193,51 @@ class RatingService
         $distribution = $this->getRatingDistribution($packages, $thresholds, $referenceDate);
         $total = array_sum($distribution);
 
-        if (0 === $total) {
+        // Calculate totals excluding unknown packages for rating calculation
+        $knownPackages = $distribution['current'] + $distribution['medium'] + $distribution['old'];
+
+        if (0 === $knownPackages) {
             return [
-                'total_packages' => 0,
+                'total_packages' => $total,
                 'distribution' => $distribution,
                 'percentages' => [
                     'current' => 0.0,
                     'medium' => 0.0,
                     'old' => 0.0,
-                    'unknown' => 0.0,
+                    'unknown' => $total > 0 ? 100.0 : 0.0,
                 ],
                 'dominant_category' => 'unknown',
-                'dominant_count' => 0,
-                'dominant_percentage' => 0.0,
+                'dominant_count' => $distribution['unknown'],
+                'dominant_percentage' => $total > 0 ? 100.0 : 0.0,
                 'has_critical' => false,
                 'health_score' => 0.0,
             ];
         }
 
-        $percentages = [];
-        foreach ($distribution as $category => $count) {
-            $percentages[$category] = round(($count / $total) * 100, 1);
-        }
+        // Calculate percentages based on known packages only (excluding unknown)
+        $percentages = [
+            'current' => round(($distribution['current'] / $knownPackages) * 100, 1),
+            'medium' => round(($distribution['medium'] / $knownPackages) * 100, 1),
+            'old' => round(($distribution['old'] / $knownPackages) * 100, 1),
+            'unknown' => round(($distribution['unknown'] / $total) * 100, 1), // Unknown as percentage of total
+        ];
 
-        // Find the dominant category (most packages)
-        $maxCount = max($distribution ?: [0]); // Ensure non-empty array
-        $dominantCategory = array_keys($distribution, $maxCount)[0] ?? 'unknown';
-        $dominantCount = $distribution[$dominantCategory];
+        // Find the dominant category among known packages
+        $knownDistribution = [
+            'current' => $distribution['current'],
+            'medium' => $distribution['medium'],
+            'old' => $distribution['old'],
+        ];
+
+        $maxCount = max($knownDistribution) ?: 0;
+        $dominantCategory = array_keys($knownDistribution, $maxCount)[0] ?? 'unknown';
+        $dominantCount = $knownDistribution[$dominantCategory];
         $dominantPercentage = $percentages[$dominantCategory];
 
-        // Calculate health score (current = 1.0, medium = 0.5, old = 0.0, unknown = 0.0)
+        // Calculate health score based on known packages only
         $healthScore = 0.0;
-        if ($total > 0) {
-            $healthScore = (($distribution['current'] * 1.0) + ($distribution['medium'] * 0.5)) / $total * 100;
+        if ($knownPackages > 0) {
+            $healthScore = (($distribution['current'] * 1.0) + ($distribution['medium'] * 0.5)) / $knownPackages * 100;
         }
 
         return [
