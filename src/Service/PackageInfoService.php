@@ -25,7 +25,9 @@ namespace KonradMichalik\ComposerDependencyAge\Service;
 
 use Composer\Composer;
 use DateTimeImmutable;
+use Exception;
 use KonradMichalik\ComposerDependencyAge\Api\PackagistClient;
+use KonradMichalik\ComposerDependencyAge\Configuration\Configuration;
 use KonradMichalik\ComposerDependencyAge\Exception\ApiException;
 use KonradMichalik\ComposerDependencyAge\Exception\PackageInfoException;
 use KonradMichalik\ComposerDependencyAge\Model\Package;
@@ -43,6 +45,7 @@ class PackageInfoService
         private readonly ?CacheService $cacheService = null,
         private readonly ?PerformanceOptimizationService $performanceService = null,
         private readonly bool $offlineMode = false,
+        private readonly ?Configuration $configuration = null,
     ) {}
 
     /**
@@ -143,17 +146,24 @@ class PackageInfoService
      */
     public function enrichPackagesWithReleaseInfo(array $packages): array
     {
+        $enrichedPackages = [];
+
         if ($this->offlineMode) {
-            return $this->enrichPackagesOfflineMode($packages);
+            $enrichedPackages = $this->enrichPackagesOfflineMode($packages);
+        } elseif (null !== $this->performanceService && count($packages) > 10) {
+            // Use batch processing for better performance with large package sets
+            $enrichedPackages = $this->enrichPackagesInBatches($packages);
+        } else {
+            // Fallback to sequential processing
+            $enrichedPackages = $this->enrichPackagesSequentially($packages);
         }
 
-        // Use batch processing for better performance with large package sets
-        if (null !== $this->performanceService && count($packages) > 10) {
-            return $this->enrichPackagesInBatches($packages);
+        // Add release history if enabled
+        if ($this->configuration?->isReleaseCycleAnalysisEnabled()) {
+            $enrichedPackages = $this->enrichWithReleaseHistory($enrichedPackages);
         }
 
-        // Fallback to sequential processing
-        return $this->enrichPackagesSequentially($packages);
+        return $enrichedPackages;
     }
 
     /**
@@ -532,6 +542,137 @@ class PackageInfoService
             'direct' => $directDependencies,
             'dev' => $devDependencies,
         ];
+    }
+
+    /**
+     * Enrich packages with release history for cycle analysis.
+     *
+     * @param array<Package> $packages
+     *
+     * @return array<Package>
+     */
+    private function enrichWithReleaseHistory(array $packages): array
+    {
+        $enrichedPackages = [];
+
+        foreach ($packages as $package) {
+            // Skip dev versions and packages without release date
+            if ($this->isDevVersion($package->version) || null === $package->releaseDate) {
+                $enrichedPackages[] = $package;
+                continue;
+            }
+
+            try {
+                $releaseHistory = $this->extractReleaseHistory($package);
+                $enrichedPackages[] = $package->withReleaseHistory($releaseHistory);
+            } catch (PackageInfoException) {
+                // If we can't get release history, keep the package without it
+                $enrichedPackages[] = $package;
+            }
+        }
+
+        return $enrichedPackages;
+    }
+
+    /**
+     * Extract release history from package data.
+     *
+     * @return array<array<string, mixed>>
+     *
+     * @throws PackageInfoException
+     */
+    private function extractReleaseHistory(Package $package): array
+    {
+        // Check cache first
+        if (null !== $this->cacheService) {
+            $cachedHistory = $this->cacheService->getPackageInfo($package->name, 'release_history');
+            if (null !== $cachedHistory && isset($cachedHistory['data']) && is_array($cachedHistory['data'])) {
+                return $cachedHistory['data'];
+            }
+        }
+
+        // Fetch from API
+        $apiResponse = $this->client->getPackageInfo($package->name);
+        if (!isset($apiResponse['packages'][$package->name])) {
+            throw new PackageInfoException("Package '{$package->name}' not found in Packagist response");
+        }
+
+        $versions = $apiResponse['packages'][$package->name];
+        $releaseHistory = $this->buildReleaseHistory($versions);
+
+        // Cache for longer (7 days) since history changes less frequently
+        if (null !== $this->cacheService) {
+            $this->cacheService->storePackageInfo($package->name, 'release_history', ['data' => $releaseHistory]);
+        }
+
+        return $releaseHistory;
+    }
+
+    /**
+     * Build release history from version data.
+     *
+     * @param array<array<string, mixed>> $versions
+     *
+     * @return array<array<string, mixed>>
+     */
+    private function buildReleaseHistory(array $versions): array
+    {
+        $releases = [];
+        $historyMonths = $this->configuration?->getReleaseHistoryMonths() ?? 24;
+        $cutoffDate = new DateTimeImmutable("-{$historyMonths} months");
+
+        foreach ($versions as $version) {
+            if (!isset($version['time'], $version['version'])) {
+                continue;
+            }
+
+            // Skip dev versions
+            if (!$this->isStableVersion($version['version'])) {
+                continue;
+            }
+
+            try {
+                $releaseDate = new DateTimeImmutable($version['time']);
+                if ($releaseDate >= $cutoffDate) {
+                    $releases[] = [
+                        'version' => $version['version'],
+                        'date' => $releaseDate,
+                        'type' => $this->detectReleaseType($version['version']),
+                    ];
+                }
+            } catch (Exception) {
+                // Skip invalid dates
+                continue;
+            }
+        }
+
+        // Sort by date (newest first)
+        usort($releases, fn ($a, $b) => $b['date'] <=> $a['date']);
+
+        return $releases;
+    }
+
+    /**
+     * Detect release type (major, minor, patch).
+     */
+    private function detectReleaseType(string $version): string
+    {
+        // Simple semver detection
+        if (preg_match('/^(\d+)\.(\d+)\.(\d+)/', $version)) {
+            $parts = explode('.', $version);
+            if (isset($parts[0], $parts[1], $parts[2])) {
+                if ((int) $parts[0] > 0) {
+                    return 'major';
+                }
+                if ((int) $parts[1] > 0) {
+                    return 'minor';
+                }
+
+                return 'patch';
+            }
+        }
+
+        return 'unknown';
     }
 
     /**

@@ -25,11 +25,13 @@ namespace KonradMichalik\ComposerDependencyAge\Tests\Output;
 
 use DateTimeImmutable;
 use Iterator;
+use KonradMichalik\ComposerDependencyAge\Configuration\Configuration;
 use KonradMichalik\ComposerDependencyAge\Model\Package;
 use KonradMichalik\ComposerDependencyAge\Output\ColorFormatter;
 use KonradMichalik\ComposerDependencyAge\Output\TableRenderer;
 use KonradMichalik\ComposerDependencyAge\Service\AgeCalculationService;
 use KonradMichalik\ComposerDependencyAge\Service\RatingService;
+use KonradMichalik\ComposerDependencyAge\Service\ReleaseCycleService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
@@ -376,7 +378,7 @@ final class TableRendererTest extends TestCase
     public function testTableWithColorFormatter(): void
     {
         $colorFormatter = new ColorFormatter(true);
-        $renderer = new TableRenderer($this->ageService, $this->ratingService, $colorFormatter);
+        $renderer = new TableRenderer($this->ageService, $this->ratingService);
 
         $referenceDate = new DateTimeImmutable('2023-07-01');
         $package = new Package(
@@ -402,5 +404,105 @@ final class TableRendererTest extends TestCase
 
         // Color formatting testing is environment-dependent
         $this->addToAssertionCount(1); // Mark as tested
+    }
+
+    public function testGetDefaultColumnsWithReleaseCycleAnalysisEnabled(): void
+    {
+        $config = new Configuration(enableReleaseCycleAnalysis: true);
+        $ageService = new AgeCalculationService();
+        $ratingService = new RatingService($ageService);
+        $releaseCycleService = new ReleaseCycleService($ageService);
+        $renderer = new TableRenderer($ageService, $ratingService, $releaseCycleService, $config);
+
+        $columns = $renderer->getDefaultColumns();
+
+        $expectedColumns = ['package', 'version', 'age', 'rating', 'latest', 'cycle'];
+        $this->assertSame($expectedColumns, $columns);
+    }
+
+    public function testGetDefaultColumnsWithReleaseCycleAnalysisDisabled(): void
+    {
+        $config = new Configuration(enableReleaseCycleAnalysis: false);
+        $ageService = new AgeCalculationService();
+        $ratingService = new RatingService($ageService);
+        $renderer = new TableRenderer($ageService, $ratingService, null, $config);
+
+        $columns = $renderer->getDefaultColumns();
+
+        $expectedColumns = ['package', 'version', 'age', 'rating', 'latest'];
+        $this->assertSame($expectedColumns, $columns);
+    }
+
+    public function testRenderTableWithCycleColumn(): void
+    {
+        $referenceDate = new DateTimeImmutable('2023-07-01');
+        $releaseHistory = [
+            [
+                'version' => '2.0.0',
+                'date' => new DateTimeImmutable('2023-05-01'),
+                'type' => 'major',
+            ],
+            [
+                'version' => '1.0.0',
+                'date' => new DateTimeImmutable('2023-03-01'),
+                'type' => 'major',
+            ],
+        ];
+
+        $package = new Package(
+            name: 'test/package',
+            version: '2.0.0',
+            isDev: false,
+            releaseDate: new DateTimeImmutable('2023-05-01'),
+            releaseHistory: $releaseHistory,
+        );
+
+        $config = new Configuration(enableReleaseCycleAnalysis: true);
+        $ageService = new AgeCalculationService();
+        $ratingService = new RatingService($ageService);
+        $releaseCycleService = new ReleaseCycleService($ageService);
+        $renderer = new TableRenderer($ageService, $ratingService, $releaseCycleService, $config);
+
+        $output = new BufferedOutput();
+        $input = new ArrayInput([]);
+        $renderer->renderTable([$package], $output, $input, [
+            'columns' => ['package', 'version', 'age', 'rating', 'cycle'],
+            'reference_date' => $referenceDate,
+            'show_colors' => false,
+        ]);
+        $result = $output->fetch();
+
+        $this->assertStringContainsString('Activity', $result); // Column header
+        $this->assertStringContainsString('test/package', $result);
+        // Should contain rating element for cycle (active pattern with 60-day interval)
+        $this->assertStringContainsString('●', $result);
+    }
+
+    public function testRenderTableWithCycleColumnButNoReleaseCycleService(): void
+    {
+        $package = new Package(
+            name: 'test/package',
+            version: '1.0.0',
+            isDev: false,
+            releaseDate: new DateTimeImmutable('2023-05-01'),
+        );
+
+        // No ReleaseCycleService provided
+        $renderer = new TableRenderer($this->ageService, $this->ratingService);
+
+        $output = new BufferedOutput();
+        $input = new ArrayInput([]);
+        $renderer->renderTable([$package], $output, $input, [
+            'columns' => ['package', 'version', 'cycle'],
+            'show_colors' => false,
+        ]);
+        $result = $output->fetch();
+
+        $this->assertStringContainsString('Activity', $result); // Column header
+        $this->assertStringContainsString('test/package', $result);
+        // Should be empty since no ReleaseCycleService
+        $lines = explode("\n", $result);
+        $dataLine = array_filter($lines, fn ($line) => str_contains($line, 'test/package'));
+        $this->assertNotEmpty($dataLine);
     }
 }

@@ -33,6 +33,9 @@ use DateTimeImmutable;
  */
 final class Package
 {
+    /**
+     * @param array<array<string, mixed>> $releaseHistory
+     */
     public function __construct(
         public readonly string $name,
         public readonly string $version,
@@ -41,6 +44,7 @@ final class Package
         public readonly ?DateTimeImmutable $releaseDate = null,
         public readonly ?string $latestVersion = null,
         public readonly ?DateTimeImmutable $latestReleaseDate = null,
+        public readonly array $releaseHistory = [],
     ) {}
 
     public function withReleaseDate(DateTimeImmutable $releaseDate): self
@@ -53,6 +57,7 @@ final class Package
             releaseDate: $releaseDate,
             latestVersion: $this->latestVersion,
             latestReleaseDate: $this->latestReleaseDate,
+            releaseHistory: $this->releaseHistory,
         );
     }
 
@@ -66,6 +71,24 @@ final class Package
             releaseDate: $this->releaseDate,
             latestVersion: $latestVersion,
             latestReleaseDate: $latestReleaseDate,
+            releaseHistory: $this->releaseHistory,
+        );
+    }
+
+    /**
+     * @param array<array<string, mixed>> $releaseHistory
+     */
+    public function withReleaseHistory(array $releaseHistory): self
+    {
+        return new self(
+            name: $this->name,
+            version: $this->version,
+            isDev: $this->isDev,
+            isDirect: $this->isDirect,
+            releaseDate: $this->releaseDate,
+            latestVersion: $this->latestVersion,
+            latestReleaseDate: $this->latestReleaseDate,
+            releaseHistory: $releaseHistory,
         );
     }
 

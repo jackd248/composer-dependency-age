@@ -25,9 +25,11 @@ namespace KonradMichalik\ComposerDependencyAge\Output;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
+use KonradMichalik\ComposerDependencyAge\Configuration\Configuration;
 use KonradMichalik\ComposerDependencyAge\Model\Package;
 use KonradMichalik\ComposerDependencyAge\Service\AgeCalculationService;
 use KonradMichalik\ComposerDependencyAge\Service\RatingService;
+use KonradMichalik\ComposerDependencyAge\Service\ReleaseCycleService;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -46,8 +48,10 @@ final class OutputManager
     public function __construct(
         AgeCalculationService $ageCalculationService,
         RatingService $ratingService,
+        ?ReleaseCycleService $releaseCycleService = null,
+        ?Configuration $configuration = null,
     ) {
-        $this->tableRenderer = new TableRenderer($ageCalculationService, $ratingService);
+        $this->tableRenderer = new TableRenderer($ageCalculationService, $ratingService, $releaseCycleService, $configuration);
         $this->jsonFormatter = new JsonFormatter($ageCalculationService, $ratingService);
         $this->gitHubFormatter = new GitHubFormatter($ageCalculationService, $ratingService);
     }

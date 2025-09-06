@@ -22,6 +22,7 @@ A Composer plugin that analyzes the age of your project dependencies and provide
 ## ✨ Features
 
 - **Neutral Age Analysis** - Categorizes dependencies as Current, Medium, or Old based on release dates
+- **Release Cycle Analysis** - Analyzes dependency activity patterns with 4-tier activity rating
 - **Multiple Output Formats** - CLI table, JSON for automation, GitHub-formatted for PRs
 - **Flexible Filtering** - Analyze all dependencies or focus on direct ones only
 - **Smart Caching** - Caches Packagist API responses with configurable TTL for better performance
@@ -67,6 +68,7 @@ Dependency age ~ // 21.9 years in total (9 months average per package). Use comp
 | `--offline` | Use cached data only | false |
 | `--ignore` | Comma-separated packages to ignore | - |
 | `--thresholds` | Custom age thresholds (years) | current=0.5,medium=1.0,old=2.0 |
+| `--no-release-cycles` | Disable release cycle analysis | false |
 
 ### Configuration via composer.json
 
@@ -85,7 +87,9 @@ Dependency age ~ // 21.9 years in total (9 months average per package). Use comp
       "cache_ttl": 2592000,
       "event_integration": true,
       "event_operations": ["install", "update"],
-      "event_force_without_cache": false
+      "event_force_without_cache": false,
+      "enable_release_cycle_analysis": true,
+      "release_history_months": 24
     }
   }
 }
@@ -109,6 +113,33 @@ The overall rating in the summary is calculated based on the distribution of you
 | **Mostly Current** | ✓ | ≥ 70% Current packages | Your project uses predominantly recent dependencies |
 | **Needs Attention** | ! | ≥ 30% Old packages | Significant portion of dependencies are outdated |
 | **Moderately Current** | ~️ | All other cases | Balanced mix of current and older dependencies |
+
+## 🔄 Release Cycle Analysis
+
+The plugin analyzes the release patterns of your dependencies to provide insights into their maintenance activity:
+
+### Activity Categories
+
+| Activity Level | Rating | Release Frequency | Description |
+|----------------|--------|-------------------|-------------|
+| **Very Active** | ●●● | ≤ 60 days | Highly active development with frequent releases |
+| **Active** | ●●○ | ≤ 180 days | Regular maintenance with consistent releases |
+| **Moderate** | ●○○ | ≤ 365 days | Periodic updates with moderate activity |
+| **Slow/Inactive** | ○○○ | > 365 days | Infrequent releases or maintenance |
+
+### Release Trend Detection
+
+The analysis also detects release trends:
+- **Accelerating** - Release frequency is increasing
+- **Slowing** - Release frequency is decreasing
+- **Stable** - Consistent release pattern
+- **Unknown** - Insufficient data for trend analysis
+
+### Configuration Options
+
+- **`enable_release_cycle_analysis`** - Enable/disable release cycle analysis (default: `true`)
+- **`release_history_months`** - Months of release history to analyze (default: `24`, range: 1-60)
+- **`--no-release-cycles`** - Command line flag to disable analysis for faster execution
 
 ## 🧑‍💻 Contributing
 

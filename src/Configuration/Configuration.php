@@ -72,6 +72,8 @@ final class Configuration
         private readonly bool $eventIntegration = true,
         private readonly array $eventOperations = ['install', 'update'],
         private readonly bool $eventForceWithoutCache = false,
+        private readonly bool $enableReleaseCycleAnalysis = true,
+        private readonly int $releaseHistoryMonths = 24,
     ) {}
 
     /**
@@ -105,6 +107,8 @@ final class Configuration
             eventIntegration: $config['event_integration'] ?? true,
             eventOperations: $config['event_operations'] ?? ['install', 'update'],
             eventForceWithoutCache: $config['event_force_without_cache'] ?? false,
+            enableReleaseCycleAnalysis: $config['enable_release_cycle_analysis'] ?? true,
+            releaseHistoryMonths: $config['release_history_months'] ?? 24,
         );
     }
 
@@ -131,6 +135,8 @@ final class Configuration
             eventIntegration: $overrides['event_integration'] ?? $this->eventIntegration,
             eventOperations: $overrides['event_operations'] ?? $this->eventOperations,
             eventForceWithoutCache: $overrides['event_force_without_cache'] ?? $this->eventForceWithoutCache,
+            enableReleaseCycleAnalysis: $overrides['enable_release_cycle_analysis'] ?? $this->enableReleaseCycleAnalysis,
+            releaseHistoryMonths: $overrides['release_history_months'] ?? $this->releaseHistoryMonths,
         );
     }
 
@@ -277,7 +283,22 @@ final class Configuration
             $errors[] = "Whitelist file does not exist: {$this->whitelistFile}";
         }
 
+        // Validate release history months
+        if ($this->releaseHistoryMonths <= 0 || $this->releaseHistoryMonths > 60) {
+            $errors[] = "Release history months must be between 1 and 60, got: {$this->releaseHistoryMonths}";
+        }
+
         return $errors;
+    }
+
+    public function isReleaseCycleAnalysisEnabled(): bool
+    {
+        return $this->enableReleaseCycleAnalysis;
+    }
+
+    public function getReleaseHistoryMonths(): int
+    {
+        return $this->releaseHistoryMonths;
     }
 
     /**
@@ -303,6 +324,8 @@ final class Configuration
             'event_integration' => $this->eventIntegration,
             'event_operations' => $this->eventOperations,
             'event_force_without_cache' => $this->eventForceWithoutCache,
+            'enable_release_cycle_analysis' => $this->enableReleaseCycleAnalysis,
+            'release_history_months' => $this->releaseHistoryMonths,
         ];
     }
 }

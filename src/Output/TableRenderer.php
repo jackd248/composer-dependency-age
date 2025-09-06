@@ -27,9 +27,11 @@ use ConsoleStyleKit\ConsoleStyleKit;
 use ConsoleStyleKit\Elements\RatingElement;
 use ConsoleStyleKit\Enums\BlockquoteType;
 use DateTimeImmutable;
+use KonradMichalik\ComposerDependencyAge\Configuration\Configuration;
 use KonradMichalik\ComposerDependencyAge\Model\Package;
 use KonradMichalik\ComposerDependencyAge\Service\AgeCalculationService;
 use KonradMichalik\ComposerDependencyAge\Service\RatingService;
+use KonradMichalik\ComposerDependencyAge\Service\ReleaseCycleService;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -45,6 +47,8 @@ class TableRenderer
     public function __construct(
         private readonly AgeCalculationService $ageCalculationService,
         private readonly RatingService $ratingService,
+        private readonly ?ReleaseCycleService $releaseCycleService = null,
+        private readonly ?Configuration $configuration = null,
     ) {}
 
     /**
@@ -111,7 +115,14 @@ class TableRenderer
      */
     public function getDefaultColumns(): array
     {
-        return ['package', 'version', 'age', 'rating', 'latest'];
+        $columns = ['package', 'version', 'age', 'rating', 'latest'];
+
+        // Add cycle column if release cycle analysis is enabled
+        if ($this->configuration?->isReleaseCycleAnalysisEnabled()) {
+            $columns[] = 'cycle';
+        }
+
+        return $columns;
     }
 
     /**
@@ -129,6 +140,8 @@ class TableRenderer
             'age' => 'Age',
             'rating' => 'Rating',
             'latest' => 'Latest',
+            'cycle' => 'Activity',
+            'dev' => 'Dev',
         ];
 
         return array_map(fn ($col) => $headerMap[$col] ?? ucfirst($col), $columns);
@@ -155,6 +168,7 @@ class TableRenderer
                 'rating' => $this->formatRating($rating, $style),
                 'latest' => $this->formatLatestVersion($package, $detailed) ?: '',
                 'dev' => $package->isDev ? 'Yes' : '',
+                'cycle' => $this->formatReleaseCycle($package, $style),
                 default => '',
             };
         }
@@ -299,6 +313,20 @@ class TableRenderer
         }
 
         return '-'.$reduction['formatted'];
+    }
+
+    /**
+     * Format release cycle activity.
+     */
+    private function formatReleaseCycle(Package $package, ?ConsoleStyleKit $style = null): string
+    {
+        if (null === $this->releaseCycleService) {
+            return ''; // Release cycle analysis disabled
+        }
+
+        $cycleAnalysis = $this->releaseCycleService->analyzeReleaseCycle($package);
+
+        return $this->releaseCycleService->formatCycleRating($cycleAnalysis, $style);
     }
 
     /**

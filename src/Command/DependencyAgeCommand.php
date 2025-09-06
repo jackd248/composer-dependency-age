@@ -223,6 +223,12 @@ HELP
                 null,
                 InputOption::VALUE_NONE,
                 'Show only direct dependencies (exclude transitive dependencies)',
+            )
+            ->addOption(
+                'no-release-cycles',
+                null,
+                InputOption::VALUE_NONE,
+                'Disable release cycle analysis (faster execution, fewer API calls)',
             );
     }
 
@@ -247,7 +253,13 @@ HELP
             // Parse command options
             $offlineMode = $input->getOption('offline');
             $noCacheMode = $input->getOption('no-cache');
+            $noReleaseCycles = $input->getOption('no-release-cycles');
             $maxConcurrent = $config->getMaxConcurrentRequests();
+
+            // Disable release cycle analysis if requested
+            if ($noReleaseCycles) {
+                $config = $config->withOverrides(['enable_release_cycle_analysis' => false]);
+            }
 
             // Initialize performance service
             $performanceService = new PerformanceOptimizationService();
@@ -270,6 +282,9 @@ HELP
             // Initialize services
             $ageCalculationService = new AgeCalculationService();
             $ratingService = new RatingService($ageCalculationService);
+            $releaseCycleService = $config->isReleaseCycleAnalysisEnabled()
+                ? new \KonradMichalik\ComposerDependencyAge\Service\ReleaseCycleService($ageCalculationService)
+                : null;
 
             // Initialize cache service unless disabled
             $cacheService = null;
@@ -294,8 +309,9 @@ HELP
                 $cacheService,
                 $performanceService,
                 $offlineMode,
+                $config,
             );
-            $outputManager = new OutputManager($ageCalculationService, $ratingService);
+            $outputManager = new OutputManager($ageCalculationService, $ratingService, $releaseCycleService, $config);
 
             // Get packages from composer.lock
             $packages = $packageInfoService->getInstalledPackages($composer);
