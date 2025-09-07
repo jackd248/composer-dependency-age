@@ -433,6 +433,12 @@ class TableRenderer
         $style->newLine();
         $output->writeln('<options=bold>Legend</>');
         $output->writeln('- Rating: '.RatingElement::circle($style, 3, 3, colorful: true)->__toString().'  mostly current, '.RatingElement::circle($style, 3, 2, colorful: true)->__toString().' moderately current, '.RatingElement::circle($style, 3, 1, colorful: true)->__toString().' chronologically old, '.RatingElement::circle($style, 3, 0, colorful: true)->__toString().' unknown');
+
+        // Add Activity legend only if release cycle analysis is enabled
+        if ($this->configuration?->isReleaseCycleAnalysisEnabled()) {
+            $output->writeln('- Activity: '.RatingElement::circle($style, 3, 3, colorful: true)->__toString().' very active (≤60d), '.RatingElement::circle($style, 3, 2, colorful: true)->__toString().' active (≤180d), '.RatingElement::circle($style, 3, 1, colorful: true)->__toString().' moderate (≤365d), '.RatingElement::circle($style, 3, 0, colorful: true)->__toString().' slow/inactive');
+        }
+
         $output->writeln('- Type: <fg=cyan>→</> direct dependency, <fg=yellow>~</> indirect dependency, <fg=magenta>*</> dev dependency');
     }
 
