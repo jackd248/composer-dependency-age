@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "83a2816f8000d590df2f418ebd6d81a8",
+    "content-hash": "199b72665fbbde63613e2bdbb3bb67b4",
     "packages": [
         {
             "name": "konradmichalik/console-style-kit",
-            "version": "dev-main",
+            "version": "0.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/jackd248/console-style-kit.git",
-                "reference": "81bc74a0c76766a4547a10fdb578e46295bef65a"
+                "reference": "36db443427727f52919f04482bd8a8d6c31b30c1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/jackd248/console-style-kit/zipball/81bc74a0c76766a4547a10fdb578e46295bef65a",
-                "reference": "81bc74a0c76766a4547a10fdb578e46295bef65a",
+                "url": "https://api.github.com/repos/jackd248/console-style-kit/zipball/36db443427727f52919f04482bd8a8d6c31b30c1",
+                "reference": "36db443427727f52919f04482bd8a8d6c31b30c1",
                 "shasum": ""
             },
             "require": {
@@ -36,7 +36,6 @@
                 "phpunit/phpunit": "^10.2 || ^11.0 || ^12.0",
                 "roave/security-advisories": "dev-latest"
             },
-            "default-branch": true,
             "type": "library",
             "autoload": {
                 "psr-4": {
@@ -56,9 +55,9 @@
             "description": "Symfony Console Style Helper Extensions",
             "support": {
                 "issues": "https://github.com/jackd248/console-style-kit/issues",
-                "source": "https://github.com/jackd248/console-style-kit/tree/main"
+                "source": "https://github.com/jackd248/console-style-kit/tree/0.1.0"
             },
-            "time": "2025-09-05T19:20:35+00:00"
+            "time": "2025-09-07T12:36:36+00:00"
         },
         {
             "name": "psr/container",
@@ -2449,16 +2448,16 @@
         },
         {
             "name": "konradmichalik/php-doc-block-header-fixer",
-            "version": "0.2.0",
+            "version": "0.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/jackd248/php-doc-block-header-fixer.git",
-                "reference": "d43f5a562a6fdb15a690ebb2a7b8c6cb966146e8"
+                "reference": "8082d2d1901f06874e7484f44e94b74bd914d397"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/jackd248/php-doc-block-header-fixer/zipball/d43f5a562a6fdb15a690ebb2a7b8c6cb966146e8",
-                "reference": "d43f5a562a6fdb15a690ebb2a7b8c6cb966146e8",
+                "url": "https://api.github.com/repos/jackd248/php-doc-block-header-fixer/zipball/8082d2d1901f06874e7484f44e94b74bd914d397",
+                "reference": "8082d2d1901f06874e7484f44e94b74bd914d397",
                 "shasum": ""
             },
             "require": {
@@ -2505,9 +2504,9 @@
             ],
             "support": {
                 "issues": "https://github.com/jackd248/php-doc-block-header-fixer/issues",
-                "source": "https://github.com/jackd248/php-doc-block-header-fixer/tree/0.2.0"
+                "source": "https://github.com/jackd248/php-doc-block-header-fixer/tree/0.2.1"
             },
-            "time": "2025-09-04T18:53:14+00:00"
+            "time": "2025-09-07T12:23:01+00:00"
         },
         {
             "name": "localheinz/diff",
@@ -7212,7 +7211,6 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
-        "konradmichalik/console-style-kit": 20,
         "roave/security-advisories": 20
     },
     "prefer-stable": true,

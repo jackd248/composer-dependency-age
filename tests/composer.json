@@ -12,6 +12,5 @@
 		"allow-plugins": {
 			"konradmichalik/composer-dependency-age": true
 		}
-	},
-	"minimum-stability": "dev"
+	}
 }

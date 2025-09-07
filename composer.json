@@ -22,7 +22,7 @@
 		"ext-curl": "*",
 		"ext-posix": "*",
 		"composer-plugin-api": "^2.0",
-		"konradmichalik/console-style-kit": "dev-main",
+		"konradmichalik/console-style-kit": "^0.1",
 		"symfony/console": "^5.0 || ^6.0 || ^7.0"
 	},
 	"require-dev": {
