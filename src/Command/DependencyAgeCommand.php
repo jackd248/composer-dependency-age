@@ -238,10 +238,6 @@ HELP
         $style = new ConsoleStyleKit($input, $output);
         $this->displayHeader($style, $output);
 
-        $loading = $style->loading('Analyzing dependency ages', color: '#9C5B61')
-            ->enableAutoUpdate()
-            ->start();
-
         try {
             $composer = $this->requireComposer();
 
@@ -342,11 +338,15 @@ HELP
                 return self::SUCCESS;
             }
 
-            $loading->stop();
             $output->writeln(sprintf('Found %d packages to analyze.', count($filteredPackages)));
+
+            $loading = $style->loading('Analyzing dependency ages', color: '#9C5B61')
+                ->enableAutoUpdate()
+                ->start();
 
             // Fetch package information with progress
             $enrichedPackages = $packageInfoService->enrichPackagesWithReleaseInfo($filteredPackages);
+            $loading->stop();
 
             // Format and output results
             $format = $config->getOutputFormat();
