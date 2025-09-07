@@ -416,7 +416,7 @@ final class TableRendererTest extends TestCase
 
         $columns = $renderer->getDefaultColumns();
 
-        $expectedColumns = ['package', 'version', 'age', 'rating', 'latest', 'cycle'];
+        $expectedColumns = ['package', 'version', 'age', 'rating', 'cycle', 'latest'];
         $this->assertSame($expectedColumns, $columns);
     }
 

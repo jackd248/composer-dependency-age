@@ -115,12 +115,14 @@ class TableRenderer
      */
     public function getDefaultColumns(): array
     {
-        $columns = ['package', 'version', 'age', 'rating', 'latest'];
+        $columns = ['package', 'version', 'age', 'rating'];
 
         // Add cycle column if release cycle analysis is enabled
         if ($this->configuration?->isReleaseCycleAnalysisEnabled()) {
             $columns[] = 'cycle';
         }
+
+        $columns[] = 'latest';
 
         return $columns;
     }
@@ -139,12 +141,12 @@ class TableRenderer
             'version' => 'Version',
             'age' => 'Age',
             'rating' => 'Rating',
-            'latest' => 'Latest',
             'cycle' => 'Activity',
+            'latest' => 'Latest',
             'dev' => 'Dev',
         ];
 
-        return array_map(fn ($col) => $headerMap[$col] ?? ucfirst($col), $columns);
+        return array_map(static fn ($col) => $headerMap[$col] ?? ucfirst($col), $columns);
     }
 
     /**
@@ -484,7 +486,7 @@ class TableRenderer
 
         // Add verbose explanation of rating calculation
         if ($output->isVerbose()) {
-            $this->renderVerboseRatingExplanation($packages, $output, $thresholds, $referenceDate);
+            $this->renderVerboseRatingExplanation($packages, $output, $style, $thresholds, $referenceDate);
         }
     }
 
@@ -515,8 +517,13 @@ class TableRenderer
         $percentages = $summary['percentages'] ?? [];
         $currentPercent = $percentages['current'] ?? 0;
         $oldPercent = $percentages['old'] ?? 0;
+        $unknownPercent = $percentages['unknown'] ?? 0;
+        $dominantCategory = $summary['dominant_category'] ?? 'unknown';
 
-        if ($currentPercent >= 70) {
+        // If all or most packages are unknown, show unknown rating
+        if ('unknown' === $dominantCategory || $unknownPercent >= 70) {
+            $currentRating = 0; // Unknown
+        } elseif ($currentPercent >= 70) {
             $currentRating = 3; // Mostly current
         } elseif ($oldPercent >= 30) {
             $currentRating = 1; // Needs attention
@@ -533,7 +540,7 @@ class TableRenderer
      * @param array<Package>       $packages
      * @param array<string, float> $thresholds
      */
-    private function renderVerboseRatingExplanation(array $packages, OutputInterface $output, array $thresholds = [], ?DateTimeImmutable $referenceDate = null): void
+    private function renderVerboseRatingExplanation(array $packages, OutputInterface $output, ConsoleStyleKit $style, array $thresholds = [], ?DateTimeImmutable $referenceDate = null): void
     {
         $output->writeln('');
         $output->writeln('<comment>Rating Calculation Details:</comment>');
@@ -566,12 +573,21 @@ class TableRenderer
         $output->writeln('');
         $output->writeln('Overall Rating Logic:');
 
-        if ($currentPercent >= 70) {
-            $output->writeln(sprintf('  → <fg=green>✓ Mostly Current</fg=green>: %.1f%% current packages ≥ 70%%', $currentPercent));
+        $unknownPercent = round($percentages['unknown'] ?? 0, 1);
+        $dominantCategory = $summary['dominant_category'] ?? 'unknown';
+
+        if ('unknown' === $dominantCategory || $unknownPercent >= 70) {
+            $ratingDisplay = RatingElement::circle($style, 3, 0, true)->__toString();
+            $output->writeln(sprintf('  → %s Unknown: %.1f%% packages have unknown release dates ≥ 70%%', $ratingDisplay, $unknownPercent));
+        } elseif ($currentPercent >= 70) {
+            $ratingDisplay = RatingElement::circle($style, 3, 3, true)->__toString();
+            $output->writeln(sprintf('  → %s Mostly Current: %.1f%% current packages ≥ 70%%', $ratingDisplay, $currentPercent));
         } elseif ($oldPercent >= 30) {
-            $output->writeln(sprintf('  → <fg=red>! Needs Attention</fg=red>: %.1f%% old packages ≥ 30%%', $oldPercent));
+            $ratingDisplay = RatingElement::circle($style, 3, 1, true)->__toString();
+            $output->writeln(sprintf('  → %s Needs Attention: %.1f%% old packages ≥ 30%%', $ratingDisplay, $oldPercent));
         } else {
-            $output->writeln(sprintf('  → <fg=yellow>~ Moderately Current</fg=yellow>: %.1f%% current < 70%% AND %.1f%% old < 30%%', $currentPercent, $oldPercent));
+            $ratingDisplay = RatingElement::circle($style, 3, 2, true)->__toString();
+            $output->writeln(sprintf('  → %s Moderately Current: %.1f%% current < 70%% AND %.1f%% old < 30%%', $ratingDisplay, $currentPercent, $oldPercent));
         }
     }
 
@@ -605,7 +621,7 @@ class TableRenderer
             $percentage,
         );
 
-        $style->blockquote($message, BlockquoteType::TIP->value);
+        $style->blockquote($message, BlockquoteType::WARNING->value);
     }
 
     /**

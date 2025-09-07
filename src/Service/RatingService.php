@@ -209,6 +209,7 @@ class RatingService
                 'dominant_category' => 'unknown',
                 'dominant_count' => $distribution['unknown'],
                 'dominant_percentage' => $total > 0 ? 100.0 : 0.0,
+                'overall_rating' => '<fg=gray>?</fg=gray> unknown (all packages have unknown release dates)',
                 'has_critical' => false,
                 'health_score' => 0.0,
             ];
