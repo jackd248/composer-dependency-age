@@ -11,6 +11,8 @@
 
 A Composer plugin that analyzes the age of your project dependencies and provides neutral categorization to help you understand your dependency landscape. No risk assessment - just clear, objective information about when your dependencies were last released.
 
+![composer-hook-focus.png](docs/images/composer-hook-focus.png)
+
 > [!warning]
 > This package is in early development stage and may change significantly in the future. I am working steadily to release a stable version as soon as possible.
 
@@ -44,19 +46,9 @@ Run the command to fully analyze your dependencies:
 composer dependency-age
 ```
 
-### Automatic Analysis
-The plugin automatically runs after `composer install` and `composer update` operations, providing immediate feedback on your dependency landscape.
+![composer-command.png](docs/images/composer-command.png)
 
-```shell
-$ composer install
-...
-Dependency age ~ // 21.9 years in total (9 months average per package). Use composer dependency-age for full details.
-...
-```
-
-## 📝 Configuration
-
-### Command Line Options
+#### Command Line Options
 
 | Option | Description | Default |
 |--------|-------------|---------|
@@ -70,7 +62,19 @@ Dependency age ~ // 21.9 years in total (9 months average per package). Use comp
 | `--thresholds` | Custom age thresholds (years) | current=0.5,medium=1.0,old=2.0 |
 | `--no-release-cycles` | Disable release cycle analysis | false |
 
-### Configuration via composer.json
+
+### Automatic Analysis
+The plugin automatically runs after `composer install` and `composer update` operations, providing immediate feedback on your dependency landscape.
+
+```shell
+$ composer install
+```
+
+![composer-hook.png](docs/images/composer-hook.png)
+
+## 📝 Configuration
+
+Configure the plugin via `composer.json`
 
 ```json
 {
@@ -94,52 +98,6 @@ Dependency age ~ // 21.9 years in total (9 months average per package). Use comp
   }
 }
 ```
-
-## 📈 Age Categories
-
-| Category | Sign | Timeframe | Description |
-|----------|------|-----------|-------------|
-| Current | ✓    | ≤ 6 months | Recently released dependencies |
-| Medium | ~️   | ≤ 12 months | Moderately aged dependencies |
-| Old | !    | > 12 months | Dependencies released over a year ago |
-| Unknown | ?    | - | Dependencies without release date information |
-
-### Overall Project Rating
-
-The overall rating in the summary is calculated based on the distribution of your dependencies:
-
-| Rating | Symbol | Logic | Description |
-|--------|-------|-------|-------------|
-| **Mostly Current** | ✓ | ≥ 70% Current packages | Your project uses predominantly recent dependencies |
-| **Needs Attention** | ! | ≥ 30% Old packages | Significant portion of dependencies are outdated |
-| **Moderately Current** | ~️ | All other cases | Balanced mix of current and older dependencies |
-
-## 🔄 Release Cycle Analysis
-
-The plugin analyzes the release patterns of your dependencies to provide insights into their maintenance activity:
-
-### Activity Categories
-
-| Activity Level | Rating | Release Frequency | Description |
-|----------------|--------|-------------------|-------------|
-| **Very Active** | ●●● | ≤ 60 days | Highly active development with frequent releases |
-| **Active** | ●●○ | ≤ 180 days | Regular maintenance with consistent releases |
-| **Moderate** | ●○○ | ≤ 365 days | Periodic updates with moderate activity |
-| **Slow/Inactive** | ○○○ | > 365 days | Infrequent releases or maintenance |
-
-### Release Trend Detection
-
-The analysis also detects release trends:
-- **Accelerating** - Release frequency is increasing
-- **Slowing** - Release frequency is decreasing
-- **Stable** - Consistent release pattern
-- **Unknown** - Insufficient data for trend analysis
-
-### Configuration Options
-
-- **`enable_release_cycle_analysis`** - Enable/disable release cycle analysis (default: `true`)
-- **`release_history_months`** - Months of release history to analyze (default: `24`, range: 1-60)
-- **`--no-release-cycles`** - Command line flag to disable analysis for faster execution
 
 ## 🧑‍💻 Contributing
 
